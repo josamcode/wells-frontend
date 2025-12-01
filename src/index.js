@@ -12,7 +12,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import ToastWrapper from './components/common/ToastWrapper';
 
 // Get initial language for ToastContainer
-const initialLanguage = localStorage.getItem('language') || 'en';
+const initialLanguage = localStorage.getItem('language') || 'ar';
 const isRTL = initialLanguage === 'ar';
 
 // Enable debug mode

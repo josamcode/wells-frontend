@@ -14,7 +14,7 @@ export const useLanguage = () => {
 export const LanguageProvider = ({ children }) => {
   const { i18n } = useTranslation();
   const [language, setLanguageState] = useState(
-    localStorage.getItem('language') || 'en'
+    localStorage.getItem('language') || 'ar'
   );
   const [direction, setDirection] = useState(language === 'ar' ? 'rtl' : 'ltr');
 
