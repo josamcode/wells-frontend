@@ -10,7 +10,7 @@ import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Textarea from '../../components/common/Textarea';
 import { REPORT_TYPES } from '../../utils/constants';
-import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, XMarkIcon, LinkIcon } from '@heroicons/react/24/outline';
 
 const ReportForm = () => {
   const { t } = useTranslation();
@@ -27,20 +27,16 @@ const ReportForm = () => {
     project: preselectedProject || '',
     reportType: 'daily',
     title: '',
-    titleAr: '',
     description: '',
-    descriptionAr: '',
     workDate: new Date().toISOString().split('T')[0],
     workCompleted: '',
-    workCompletedAr: '',
     challenges: '',
-    challengesAr: '',
     nextSteps: '',
-    nextStepsAr: '',
     progressPercentage: '',
     laborersCount: '',
     weatherCondition: '',
     weatherTemperature: '',
+    googleDriveUrl: '',
   });
 
   useEffect(() => {
@@ -67,20 +63,16 @@ const ReportForm = () => {
         project: report.project._id,
         reportType: report.reportType,
         title: report.title || '',
-        titleAr: report.titleAr || '',
         description: report.description || '',
-        descriptionAr: report.descriptionAr || '',
         workDate: report.workDate ? report.workDate.split('T')[0] : '',
         workCompleted: report.workCompleted || '',
-        workCompletedAr: report.workCompletedAr || '',
         challenges: report.challenges || '',
-        challengesAr: report.challengesAr || '',
         nextSteps: report.nextSteps || '',
-        nextStepsAr: report.nextStepsAr || '',
         progressPercentage: report.progressPercentage || '',
         laborersCount: report.laborers?.count || '',
         weatherCondition: report.weather?.condition || '',
         weatherTemperature: report.weather?.temperature || '',
+        googleDriveUrl: report.googleDriveUrl || '',
       });
     } catch (error) {
       toast.error('Failed to fetch report');
@@ -110,22 +102,18 @@ const ReportForm = () => {
       project: formData.project,
       reportType: formData.reportType,
       title: formData.title,
-      titleAr: formData.titleAr || undefined,
       description: formData.description || undefined,
-      descriptionAr: formData.descriptionAr || undefined,
       workDate: formData.workDate,
       workCompleted: formData.workCompleted || undefined,
-      workCompletedAr: formData.workCompletedAr || undefined,
       challenges: formData.challenges || undefined,
-      challengesAr: formData.challengesAr || undefined,
       nextSteps: formData.nextSteps || undefined,
-      nextStepsAr: formData.nextStepsAr || undefined,
       progressPercentage: formData.progressPercentage ? parseInt(formData.progressPercentage) : undefined,
       laborers: formData.laborersCount ? { count: parseInt(formData.laborersCount) } : undefined,
       weather: {
         condition: formData.weatherCondition || undefined,
         temperature: formData.weatherTemperature ? parseFloat(formData.weatherTemperature) : undefined,
       },
+      googleDriveUrl: formData.googleDriveUrl || undefined,
     };
 
     try {
@@ -194,14 +182,14 @@ const ReportForm = () => {
               required
               className="md:col-span-2"
             />
-            <Select
+            {/* <Select
               label={t('reports.reportType')}
               name="reportType"
               value={formData.reportType}
               onChange={handleChange}
               options={typeOptions}
               required
-            />
+            /> */}
             <Input
               label={t('reports.workDate')}
               name="workDate"
@@ -211,18 +199,11 @@ const ReportForm = () => {
               required
             />
             <Input
-              label={t('reports.reportTitle') + ' (English)'}
+              label={t('reports.reportTitle')}
               name="title"
               value={formData.title}
               onChange={handleChange}
               required
-              className="md:col-span-2"
-            />
-            <Input
-              label={t('reports.reportTitle') + ' (Arabic)'}
-              name="titleAr"
-              value={formData.titleAr}
-              onChange={handleChange}
               className="md:col-span-2"
             />
           </div>
@@ -232,58 +213,30 @@ const ReportForm = () => {
         <Card title="Work Details">
           <div className="space-y-4">
             <Textarea
-              label="Description (English)"
+              label={t('projects.description')}
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={3}
             />
             <Textarea
-              label="Description (Arabic)"
-              name="descriptionAr"
-              value={formData.descriptionAr}
-              onChange={handleChange}
-              rows={3}
-            />
-            <Textarea
-              label="Work Completed (English)"
+              label={t('reports.workCompleted')}
               name="workCompleted"
               value={formData.workCompleted}
               onChange={handleChange}
               rows={4}
             />
             <Textarea
-              label="Work Completed (Arabic)"
-              name="workCompletedAr"
-              value={formData.workCompletedAr}
-              onChange={handleChange}
-              rows={4}
-            />
-            <Textarea
-              label="Challenges (English)"
+              label={t('reports.challenges')}
               name="challenges"
               value={formData.challenges}
               onChange={handleChange}
               rows={3}
             />
             <Textarea
-              label="Challenges (Arabic)"
-              name="challengesAr"
-              value={formData.challengesAr}
-              onChange={handleChange}
-              rows={3}
-            />
-            <Textarea
-              label="Next Steps (English)"
+              label={t('reports.nextSteps')}
               name="nextSteps"
               value={formData.nextSteps}
-              onChange={handleChange}
-              rows={3}
-            />
-            <Textarea
-              label="Next Steps (Arabic)"
-              name="nextStepsAr"
-              value={formData.nextStepsAr}
               onChange={handleChange}
               rows={3}
             />
@@ -325,6 +278,24 @@ const ReportForm = () => {
               value={formData.weatherTemperature}
               onChange={handleChange}
             />
+          </div>
+        </Card>
+
+        {/* Google Drive URL */}
+        <Card title="Google Drive Link">
+          <div className="space-y-4">
+            <Input
+              label="Google Drive URL"
+              name="googleDriveUrl"
+              type="url"
+              value={formData.googleDriveUrl}
+              onChange={handleChange}
+              placeholder="https://drive.google.com/..."
+              className="md:col-span-2"
+            />
+            <p className="text-xs text-gray-500">
+              Enter a Google Drive URL to link a PDF or document for this report
+            </p>
           </div>
         </Card>
 

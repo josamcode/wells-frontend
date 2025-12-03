@@ -167,7 +167,7 @@ const ProjectDetail = () => {
             {(project.description || project.descriptionAr) && (
               <div className="mt-4 pt-4 border-t">
                 <h4 className="font-medium text-gray-900 mb-2">
-                  {t('projects.description')}
+                  {t('projects.notes')}
                 </h4>
                 <p className="text-gray-600 text-sm">
                   {language === 'ar' && project.descriptionAr ? project.descriptionAr : project.description}

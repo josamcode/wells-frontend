@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { projectsAPI } from '../../api/projects';
 import { usersAPI } from '../../api/users';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -15,16 +16,17 @@ const ProjectForm = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, hasRole } = useAuth();
   const isEditMode = !!id;
 
   const [loading, setLoading] = useState(false);
   const [contractors, setContractors] = useState([]);
   const [projectManagers, setProjectManagers] = useState([]);
+  const [projectCreatedBy, setProjectCreatedBy] = useState(null);
   const [formData, setFormData] = useState({
+    projectNumber: '',
     projectName: '',
-    projectNameAr: '',
     description: '',
-    descriptionAr: '',
     country: '',
     region: '',
     city: '',
@@ -77,11 +79,11 @@ const ProjectForm = () => {
     try {
       const response = await projectsAPI.getById(id);
       const project = response.data.data;
+      setProjectCreatedBy(project.createdBy?._id || project.createdBy);
       setFormData({
+        projectNumber: project.projectNumber || '',
         projectName: project.projectName || '',
-        projectNameAr: project.projectNameAr || '',
         description: project.description || '',
-        descriptionAr: project.descriptionAr || '',
         country: project.country || '',
         region: project.region || '',
         city: project.city || '',
@@ -126,9 +128,7 @@ const ProjectForm = () => {
 
     const payload = {
       projectName: formData.projectName,
-      projectNameAr: formData.projectNameAr,
-      description: formData.description,
-      descriptionAr: formData.descriptionAr,
+      description: formData.description || undefined,
       country: formData.country,
       region: formData.region,
       city: formData.city,
@@ -166,6 +166,11 @@ const ProjectForm = () => {
       priority: formData.priority,
       notes: formData.notes,
     };
+
+    // Only include projectNumber if provided (admins/owners can set it manually)
+    if (formData.projectNumber) {
+      payload.projectNumber = formData.projectNumber;
+    }
 
     try {
       if (isEditMode) {
@@ -222,31 +227,38 @@ const ProjectForm = () => {
         {/* Basic Information */}
         <Card title="Basic Information">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Project Number - Only visible to admins or project owners */}
+            {(() => {
+              const isAdmin = hasRole('super_admin', 'admin');
+              const isOwner = !isEditMode || (user && projectCreatedBy &&
+                (projectCreatedBy._id === user._id || projectCreatedBy === user._id));
+              return isAdmin || isOwner;
+            })() && (
+                <div className="md:col-span-2">
+                  <Input
+                    label={t('projects.projectNumber')}
+                    name="projectNumber"
+                    value={formData.projectNumber}
+                    onChange={handleChange}
+                    placeholder="Leave empty for auto-generation"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Leave empty to auto-generate project number (format: WP-YYYYMM-#####)
+                  </p>
+                </div>
+              )}
             <Input
-              label={t('projects.projectName') + ' (English)'}
+              label={t('projects.projectName')}
               name="projectName"
               value={formData.projectName}
               onChange={handleChange}
               required
-            />
-            <Input
-              label={t('projects.projectName') + ' (Arabic)'}
-              name="projectNameAr"
-              value={formData.projectNameAr}
-              onChange={handleChange}
-            />
-            <Textarea
-              label={t('projects.description') + ' (English)'}
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={3}
               className="md:col-span-2"
             />
             <Textarea
-              label={t('projects.description') + ' (Arabic)'}
-              name="descriptionAr"
-              value={formData.descriptionAr}
+              label={t('projects.notes')}
+              name="description"
+              value={formData.description}
               onChange={handleChange}
               rows={3}
               className="md:col-span-2"

@@ -80,20 +80,20 @@ const Dashboard = () => {
       color: 'text-red-600',
       bgColor: 'bg-red-100',
     },
-    {
-      name: t('dashboard.pendingReports'),
-      value: data?.reports?.pending || 0,
-      icon: DocumentTextIcon,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      name: t('dashboard.activeContractors'),
-      value: data?.activeContractors || 0,
-      icon: UsersIcon,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100',
-    },
+    // {
+    //   name: t('dashboard.pendingReports'),
+    //   value: data?.reports?.pending || 0,
+    //   icon: DocumentTextIcon,
+    //   color: 'text-purple-600',
+    //   bgColor: 'bg-purple-100',
+    // },
+    // {
+    //   name: t('dashboard.activeContractors'),
+    //   value: data?.activeContractors || 0,
+    //   icon: UsersIcon,
+    //   color: 'text-indigo-600',
+    //   bgColor: 'bg-indigo-100',
+    // },
   ];
 
 
@@ -110,7 +110,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const IconComponent = stat.icon;
 

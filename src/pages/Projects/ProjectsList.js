@@ -11,7 +11,7 @@ import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
 import { formatDate } from '../../utils/helpers';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const ProjectsList = () => {
   const { t } = useTranslation();
@@ -19,6 +19,7 @@ const ProjectsList = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
+  const [searchValue, setSearchValue] = useState('');
 
   // View state: default to cards on mobile, table on desktop
   const [view, setView] = useState(() => {
@@ -28,13 +29,22 @@ const ProjectsList = () => {
   });
 
   useEffect(() => {
-    fetchProjects(1);
-  }, []);
+    const timeoutId = setTimeout(() => {
+      fetchProjects(1);
+    }, searchValue ? 500 : 0); // Debounce search by 500ms
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchValue]);
 
   const fetchProjects = async (page) => {
     setLoading(true);
     try {
-      const response = await projectsAPI.getAll({ page, limit: 10 });
+      const params = { page, limit: 10 };
+      if (searchValue.trim()) {
+        params.search = searchValue.trim();
+      }
+      const response = await projectsAPI.getAll(params);
       setProjects(response.data.data.projects);
       setPagination(response.data.data.pagination);
     } catch (error) {
@@ -42,6 +52,14 @@ const ProjectsList = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchValue(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchValue('');
   };
 
   const columns = [
@@ -97,6 +115,28 @@ const ProjectsList = () => {
       </div>
 
       <Card>
+        {/* Search Input */}
+        <div className="mb-4 relative">
+          <div className="absolute inset-y-0 ltr:left-0 rtl:right-0 ltr:pl-3 rtl:pr-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            value={searchValue}
+            onChange={handleSearchChange}
+            placeholder={t('common.search') + '... (Project Number, Name, Description, Country, etc.)'}
+            className="block w-full ltr:pl-10 rtl:pr-10 ltr:pr-10 rtl:pl-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+          {searchValue && (
+            <button
+              onClick={clearSearch}
+              className="absolute inset-y-0 ltr:right-0 rtl:left-0 ltr:pr-3 rtl:pl-3 flex items-center"
+            >
+              <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+        </div>
+
         {view === 'table' ? (
           <Table
             columns={columns}

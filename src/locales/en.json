@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "International Abbar Company",
+    "name": "Abbar Technical International Contractors Company",
     "welcome": "Welcome"
   },
   "auth": {
@@ -61,6 +61,7 @@
     "projectName": "Project Name",
     "projectNumber": "Project Number",
     "description": "Description",
+    "notes": "Note",
     "country": "Country",
     "region": "Region",
     "city": "City",

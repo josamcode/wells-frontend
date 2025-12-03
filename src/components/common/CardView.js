@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Badge from './Badge';
 import { formatDate } from '../../utils/helpers';
 
-const CardView = ({ data, columns, onItemClick, loading, emptyMessage = 'No data available' }) => {
+const CardView = ({ data, columns, onItemClick, loading, emptyMessage = 'No data available', renderActions }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -29,9 +29,19 @@ const CardView = ({ data, columns, onItemClick, loading, emptyMessage = 'No data
           <div
             key={index}
             onClick={() => onItemClick && onItemClick(row)}
-            className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow ${onItemClick ? 'cursor-pointer' : ''
+            className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow relative ${onItemClick ? 'cursor-pointer' : ''
               }`}
           >
+            {/* Actions - top right corner */}
+            {renderActions && (
+              <div 
+                className="absolute top-3 ltr:right-3 rtl:left-3 z-10"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {renderActions(row)}
+              </div>
+            )}
+            
             {/* Main title - first column */}
             <div className="mb-3 pb-3 border-b border-gray-200">
               <div className="text-base font-semibold text-gray-900 line-clamp-2">
@@ -44,17 +54,17 @@ const CardView = ({ data, columns, onItemClick, loading, emptyMessage = 'No data
               {otherColumns.map((column, colIndex) => {
                 const value = column.render ? column.render(row) : (column.accessor ? row[column.accessor] : '');
 
-                // Skip if no value
-                if (!value && value !== 0) return null;
+                // Skip if no value (but allow React elements and 0)
+                if (!value && value !== 0 && typeof value !== 'object') return null;
 
                 return (
-                  <div key={colIndex} className="flex items-start justify-between">
+                  <div key={colIndex} className="flex items-start justify-between gap-2" onClick={(e) => e.stopPropagation()}>
                     <span className="text-xs text-gray-500 ltr:mr-2 rtl:ml-2 flex-shrink-0">
                       {column.header}:
                     </span>
-                    <span className="text-sm text-gray-700 text-right flex-1">
+                    <div className="text-sm text-gray-700 text-right flex-1 min-w-0">
                       {value}
-                    </span>
+                    </div>
                   </div>
                 );
               })}
