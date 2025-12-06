@@ -1,32 +1,48 @@
-import React from 'react';
-import { Squares2X2Icon, TableCellsIcon } from '@heroicons/react/24/outline';
+import React, { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { TableCellsIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 
-const ViewToggle = ({ view, onViewChange }) => {
+const ViewToggle = memo(({ view, onViewChange }) => {
+  const { t } = useTranslation();
+  const handleTableView = useCallback(() => onViewChange('table'), [onViewChange]);
+  const handleCardsView = useCallback(() => onViewChange('cards'), [onViewChange]);
+
   return (
-    <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
+    <div className="inline-flex rounded-xl bg-secondary-100 p-1">
       <button
-        onClick={() => onViewChange('cards')}
-        className={`p-2 rounded transition-colors ${view === 'cards'
-          ? 'bg-white text-primary-600 shadow-sm'
-          : 'text-gray-600 hover:text-gray-900'
-          }`}
-        title="Card View"
+        onClick={handleTableView}
+        className={`
+          flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+          transition-all duration-200
+          ${view === 'table'
+            ? 'bg-white text-secondary-900 shadow-soft'
+            : 'text-secondary-500 hover:text-secondary-700'
+          }
+        `}
+        title={t('common.tableView')}
       >
-        <Squares2X2Icon className="w-5 h-5" />
+        <TableCellsIcon className="w-4 h-4" />
+        <span className="hidden sm:inline">{t('common.table')}</span>
       </button>
       <button
-        onClick={() => onViewChange('table')}
-        className={`p-2 rounded transition-colors ${view === 'table'
-          ? 'bg-white text-primary-600 shadow-sm'
-          : 'text-gray-600 hover:text-gray-900'
-          }`}
-        title="Table View"
+        onClick={handleCardsView}
+        className={`
+          flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+          transition-all duration-200
+          ${view === 'cards'
+            ? 'bg-white text-secondary-900 shadow-soft'
+            : 'text-secondary-500 hover:text-secondary-700'
+          }
+        `}
+        title={t('common.cardView')}
       >
-        <TableCellsIcon className="w-5 h-5" />
+        <Squares2X2Icon className="w-4 h-4" />
+        <span className="hidden sm:inline">{t('common.cards')}</span>
       </button>
     </div>
   );
-};
+});
+
+ViewToggle.displayName = 'ViewToggle';
 
 export default ViewToggle;
-

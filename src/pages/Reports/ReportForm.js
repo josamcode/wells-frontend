@@ -75,7 +75,7 @@ const ReportForm = () => {
         googleDriveUrl: report.googleDriveUrl || '',
       });
     } catch (error) {
-      toast.error('Failed to fetch report');
+      toast.error(t('reports.failedToFetchReport'));
       navigate('/reports');
     }
   };
@@ -121,11 +121,11 @@ const ReportForm = () => {
 
       if (isEditMode) {
         await reportsAPI.update(id, payload);
-        toast.success('Report updated successfully');
+        toast.success(t('reports.reportUpdated'));
       } else {
         const response = await reportsAPI.create(payload);
         reportId = response.data.data._id;
-        toast.success('Report created successfully');
+        toast.success(t('reports.reportCreated'));
       }
 
       // Upload files if any
@@ -137,15 +137,15 @@ const ReportForm = () => {
 
         try {
           await reportsAPI.uploadAttachments(reportId, formData);
-          toast.success('Files uploaded successfully');
+          toast.success(t('reports.filesUploaded'));
         } catch (error) {
-          toast.warning('Report saved but file upload failed');
+          toast.warning(t('reports.reportSavedButUploadFailed'));
         }
       }
 
       navigate(`/reports/${reportId}`);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save report');
+      toast.error(error.response?.data?.message || t('reports.failedToSaveReport'));
     } finally {
       setLoading(false);
     }
@@ -171,7 +171,7 @@ const ReportForm = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
-        <Card title="Basic Information">
+        <Card title={t('reports.basicInformation')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               label={t('projects.projectName')}
@@ -210,7 +210,7 @@ const ReportForm = () => {
         </Card>
 
         {/* Work Details */}
-        <Card title="Work Details">
+        <Card title={t('reports.workDetails')}>
           <div className="space-y-4">
             <Textarea
               label={t('projects.description')}
@@ -244,10 +244,10 @@ const ReportForm = () => {
         </Card>
 
         {/* Additional Details */}
-        <Card title="Additional Details">
+        <Card title={t('reports.additionalDetails')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Progress (%)"
+              label={t('reports.progressPercentage')}
               name="progressPercentage"
               type="number"
               min="0"
@@ -256,7 +256,7 @@ const ReportForm = () => {
               onChange={handleChange}
             />
             <Input
-              label="Number of Laborers"
+              label={t('reports.numberOfLaborers')}
               name="laborersCount"
               type="number"
               min="0"
@@ -268,10 +268,10 @@ const ReportForm = () => {
               name="weatherCondition"
               value={formData.weatherCondition}
               onChange={handleChange}
-              placeholder="e.g., Sunny, Cloudy, Rainy"
+              placeholder={t('reports.weatherPlaceholder')}
             />
             <Input
-              label="Temperature (°C)"
+              label={t('reports.temperature')}
               name="weatherTemperature"
               type="number"
               step="0.1"
@@ -282,25 +282,25 @@ const ReportForm = () => {
         </Card>
 
         {/* Google Drive URL */}
-        <Card title="Google Drive Link">
+        <Card title={t('reports.googleDriveLink')}>
           <div className="space-y-4">
             <Input
-              label="Google Drive URL"
+              label={t('reports.googleDriveUrl')}
               name="googleDriveUrl"
               type="url"
               value={formData.googleDriveUrl}
               onChange={handleChange}
-              placeholder="https://drive.google.com/..."
+              placeholder={t('reports.googleDriveUrlPlaceholder')}
               className="md:col-span-2"
             />
             <p className="text-xs text-gray-500">
-              Enter a Google Drive URL to link a PDF or document for this report
+              {t('reports.googleDriveUrlHint')}
             </p>
           </div>
         </Card>
 
         {/* File Attachments */}
-        <Card title={t('reports.attachments')}>
+        {/* <Card title={t('reports.attachments')}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -352,7 +352,7 @@ const ReportForm = () => {
               </div>
             )}
           </div>
-        </Card>
+        </Card> */}
 
         {/* Actions */}
         <div className="flex justify-end gap-3">

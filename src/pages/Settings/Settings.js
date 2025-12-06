@@ -45,9 +45,9 @@ const Settings = () => {
         primaryColor,
         mode,
       });
-      toast.success('Theme settings saved');
+      toast.success(t('settings.themeSettingsSaved'));
     } catch (error) {
-      toast.error('Failed to save theme settings');
+      toast.error(t('settings.failedToSaveThemeSettings'));
     }
   };
 
@@ -57,21 +57,21 @@ const Settings = () => {
       const credentials =
         googleDriveConfig.type === 'service_account'
           ? {
-              client_email: googleDriveConfig.serviceAccountEmail,
-              private_key: googleDriveConfig.privateKey,
-            }
+            client_email: googleDriveConfig.serviceAccountEmail,
+            private_key: googleDriveConfig.privateKey,
+          }
           : {
-              client_id: googleDriveConfig.clientId,
-              client_secret: googleDriveConfig.clientSecret,
-              redirect_uri: googleDriveConfig.redirectUri,
-              refresh_token: googleDriveConfig.refreshToken,
-            };
+            client_id: googleDriveConfig.clientId,
+            client_secret: googleDriveConfig.clientSecret,
+            redirect_uri: googleDriveConfig.redirectUri,
+            refresh_token: googleDriveConfig.refreshToken,
+          };
 
       await settingsAPI.initializeGoogleDrive(googleDriveConfig.type, credentials);
-      toast.success('Google Drive connected successfully');
+      toast.success(t('settings.googleDriveConnected'));
       fetchDriveStatus();
     } catch (error) {
-      toast.error('Failed to connect Google Drive');
+      toast.error(t('settings.failedToConnectGoogleDrive'));
     } finally {
       setLoadingDrive(false);
     }
@@ -117,11 +117,10 @@ const Settings = () => {
             <div className="flex gap-4">
               <button
                 onClick={() => setMode('light')}
-                className={`flex-1 py-3 px-4 border-2 rounded-lg transition-colors ${
-                  mode === 'light'
+                className={`flex-1 py-3 px-4 border-2 rounded-lg transition-colors ${mode === 'light'
                     ? 'border-primary-600 bg-primary-50'
                     : 'border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <div className="text-center">
                   <div className="text-2xl mb-1">☀️</div>
@@ -130,11 +129,10 @@ const Settings = () => {
               </button>
               <button
                 onClick={() => setMode('dark')}
-                className={`flex-1 py-3 px-4 border-2 rounded-lg transition-colors ${
-                  mode === 'dark'
+                className={`flex-1 py-3 px-4 border-2 rounded-lg transition-colors ${mode === 'dark'
                     ? 'border-primary-600 bg-primary-50'
                     : 'border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <div className="text-center">
                   <div className="text-2xl mb-1">🌙</div>
@@ -153,9 +151,8 @@ const Settings = () => {
                 <button
                   key={color.value}
                   onClick={() => setPrimaryColor(color.value)}
-                  className={`h-12 rounded-lg border-2 transition-all ${
-                    primaryColor === color.value ? 'border-gray-900 scale-105' : 'border-gray-200'
-                  }`}
+                  className={`h-12 rounded-lg border-2 transition-all ${primaryColor === color.value ? 'border-gray-900 scale-105' : 'border-gray-200'
+                    }`}
                   style={{ backgroundColor: color.value }}
                   title={color.label}
                 />
@@ -179,15 +176,13 @@ const Settings = () => {
         <div className="space-y-4">
           {driveStatus && (
             <div
-              className={`p-4 rounded-lg ${
-                driveStatus.connected ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
-              }`}
+              className={`p-4 rounded-lg ${driveStatus.connected ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
+                }`}
             >
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-3 h-3 rounded-full ${
-                    driveStatus.connected ? 'bg-green-500' : 'bg-gray-400'
-                  }`}
+                  className={`w-3 h-3 rounded-full ${driveStatus.connected ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
                 />
                 <span className="font-medium">
                   {driveStatus.connected ? t('settings.connected') : t('settings.notConnected')}
@@ -284,7 +279,7 @@ const Settings = () => {
       </Card>
 
       {/* System Information */}
-      <Card title="System Information">
+      <Card title={t('settings.systemInformation')}>
         <div className="space-y-3">
           <div className="flex justify-between">
             <span className="text-sm text-gray-600">Application Name</span>

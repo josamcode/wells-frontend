@@ -1,51 +1,64 @@
-import React from 'react';
+import React, { Suspense, lazy, memo } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './utils/ProtectedRoute';
-import { DEBUG } from './utils/debug';
+import Loading from './components/common/Loading';
 
-// Layout
+// Layout - loaded immediately as it's the shell
 import Layout from './components/layout/Layout';
 
-// Auth Pages
-import Login from './pages/Auth/Login';
-import ForgotPassword from './pages/Auth/ForgotPassword';
-import ResetPassword from './pages/Auth/ResetPassword';
+// Lazy load all pages for better performance
+const Login = lazy(() => import('./pages/Auth/Login'));
+const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/Auth/ResetPassword'));
 
-// Main Pages
-import Dashboard from './pages/Dashboard/Dashboard';
-import ProjectsList from './pages/Projects/ProjectsList';
-import ProjectDetail from './pages/Projects/ProjectDetail';
-import ProjectForm from './pages/Projects/ProjectForm';
-import ReportsList from './pages/Reports/ReportsList';
-import ReportDetail from './pages/Reports/ReportDetail';
-import ReportForm from './pages/Reports/ReportForm';
-import UsersList from './pages/Users/UsersList';
-import UserForm from './pages/Users/UserForm';
-import Notifications from './pages/Notifications/Notifications';
-import Settings from './pages/Settings/Settings';
-import Profile from './pages/Profile/Profile';
+const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
+const ProjectsList = lazy(() => import('./pages/Projects/ProjectsList'));
+const ProjectDetail = lazy(() => import('./pages/Projects/ProjectDetail'));
+const ProjectForm = lazy(() => import('./pages/Projects/ProjectForm'));
+const ReportsList = lazy(() => import('./pages/Reports/ReportsList'));
+const ReportDetail = lazy(() => import('./pages/Reports/ReportDetail'));
+const ReportForm = lazy(() => import('./pages/Reports/ReportForm'));
+const UsersList = lazy(() => import('./pages/Users/UsersList'));
+const UserForm = lazy(() => import('./pages/Users/UserForm'));
+const Notifications = lazy(() => import('./pages/Notifications/Notifications'));
+const Messages = lazy(() => import('./pages/Messages/Messages'));
+const Settings = lazy(() => import('./pages/Settings/Settings'));
+const Profile = lazy(() => import('./pages/Profile/Profile'));
 
-// Error Pages
-import Unauthorized from './pages/Errors/Unauthorized';
-import NotFound from './pages/Errors/NotFound';
+const Unauthorized = lazy(() => import('./pages/Errors/Unauthorized'));
+const NotFound = lazy(() => import('./pages/Errors/NotFound'));
+
+// Page loading fallback
+const PageLoader = memo(() => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <Loading size="lg" text="Loading..." />
+  </div>
+));
+
+PageLoader.displayName = 'PageLoader';
+
+// Full screen loading for auth
+const AuthLoader = memo(() => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary-50 via-white to-secondary-100">
+    <Loading size="xl" text="Loading..." />
+  </div>
+));
+
+AuthLoader.displayName = 'AuthLoader';
 
 function App() {
   const { user, loading } = useAuth();
 
-  // Debug logging - always call hook, make logic conditional
-  React.useEffect(() => {
-    if (DEBUG) {
-      console.log('🔍 [App] Render', { user: user?.email, loading, role: user?.role });
-    }
-  });
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-lg">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary-50 via-white to-secondary-100">
+        <div className="text-center animate-fade-in">
+          <div className="relative mb-6">
+            <div className="w-20 h-20 rounded-full border-4 border-secondary-200 mx-auto" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-4 border-transparent border-t-primary-600 animate-spin" />
+          </div>
+          <p className="text-secondary-600 font-medium animate-pulse-soft">Loading application...</p>
         </div>
       </div>
     );
@@ -54,9 +67,34 @@ function App() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate to="/" />
+          ) : (
+            <Suspense fallback={<AuthLoader />}>
+              <Login />
+            </Suspense>
+          )
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <Suspense fallback={<AuthLoader />}>
+            <ForgotPassword />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <Suspense fallback={<AuthLoader />}>
+            <ResetPassword />
+          </Suspense>
+        }
+      />
 
       {/* Protected Routes */}
       <Route
@@ -67,34 +105,161 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route
+          index
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Dashboard />
+            </Suspense>
+          }
+        />
 
         {/* Projects */}
-        <Route path="projects" element={<ProjectsList />} />
-        <Route path="projects/new" element={<ProjectForm />} />
-        <Route path="projects/:id" element={<ProjectDetail />} />
-        <Route path="projects/:id/edit" element={<ProjectForm />} />
+        <Route
+          path="projects"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ProjectsList />
+            </Suspense>
+          }
+        />
+        <Route
+          path="projects/new"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ProjectForm />
+            </Suspense>
+          }
+        />
+        <Route
+          path="projects/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ProjectDetail />
+            </Suspense>
+          }
+        />
+        <Route
+          path="projects/:id/edit"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ProjectForm />
+            </Suspense>
+          }
+        />
 
         {/* Reports */}
-        <Route path="reports" element={<ReportsList />} />
-        <Route path="reports/new" element={<ReportForm />} />
-        <Route path="reports/:id" element={<ReportDetail />} />
-        <Route path="reports/:id/edit" element={<ReportForm />} />
+        <Route
+          path="reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ReportsList />
+            </Suspense>
+          }
+        />
+        <Route
+          path="reports/new"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ReportForm />
+            </Suspense>
+          }
+        />
+        <Route
+          path="reports/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ReportDetail />
+            </Suspense>
+          }
+        />
+        <Route
+          path="reports/:id/edit"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ReportForm />
+            </Suspense>
+          }
+        />
 
         {/* Users */}
-        <Route path="users" element={<UsersList />} />
-        <Route path="users/new" element={<UserForm />} />
-        <Route path="users/:id/edit" element={<UserForm />} />
+        <Route
+          path="users"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <UsersList />
+            </Suspense>
+          }
+        />
+        <Route
+          path="users/new"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <UserForm />
+            </Suspense>
+          }
+        />
+        <Route
+          path="users/:id/edit"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <UserForm />
+            </Suspense>
+          }
+        />
 
         {/* Other */}
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="profile" element={<Profile />} />
+        <Route
+          path="notifications"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Notifications />
+            </Suspense>
+          }
+        />
+        <Route
+          path="messages"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Messages />
+            </Suspense>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Settings />
+            </Suspense>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Profile />
+            </Suspense>
+          }
+        />
       </Route>
 
       {/* Error Routes */}
-      <Route path="/unauthorized" element={<Unauthorized />} />
-      <Route path="*" element={<NotFound />} />
+      <Route
+        path="/unauthorized"
+        element={
+          <Suspense fallback={<AuthLoader />}>
+            <Unauthorized />
+          </Suspense>
+        }
+      />
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={<AuthLoader />}>
+            <NotFound />
+          </Suspense>
+        }
+      />
     </Routes>
   );
 }

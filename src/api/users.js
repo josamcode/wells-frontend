@@ -9,5 +9,6 @@ export const usersAPI = {
   update: (id, data) => axios.put(`/users/${id}`, data),
   delete: (id) => axios.delete(`/users/${id}`),
   toggleStatus: (id) => axios.patch(`/users/${id}/toggle-status`),
+  changePassword: (id, password) => axios.patch(`/users/${id}/change-password`, { password }),
 };
 

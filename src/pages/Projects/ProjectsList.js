@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -10,10 +10,11 @@ import ViewToggle from '../../components/common/ViewToggle';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
+import { SearchInput } from '../../components/common/Input';
 import { formatDate } from '../../utils/helpers';
-import { PlusIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FolderIcon } from '@heroicons/react/24/outline';
 
-const ProjectsList = () => {
+const ProjectsList = memo(() => {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const [projects, setProjects] = useState([]);
@@ -21,23 +22,14 @@ const ProjectsList = () => {
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   const [searchValue, setSearchValue] = useState('');
 
-  // View state: default to cards on mobile, table on desktop
+  // View state with persistence
   const [view, setView] = useState(() => {
     const saved = localStorage.getItem('projectsView');
     if (saved) return saved;
     return window.innerWidth < 768 ? 'cards' : 'table';
   });
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchProjects(1);
-    }, searchValue ? 500 : 0); // Debounce search by 500ms
-
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue]);
-
-  const fetchProjects = async (page) => {
+  const fetchProjects = useCallback(async (page) => {
     setLoading(true);
     try {
       const params = { page, limit: 10 };
@@ -48,120 +40,177 @@ const ProjectsList = () => {
       setProjects(response.data.data.projects);
       setPagination(response.data.data.pagination);
     } catch (error) {
-      console.error('Failed to fetch projects:', error);
+      // Silent fail
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchValue]);
 
-  const handleSearchChange = (e) => {
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchProjects(1);
+    }, searchValue ? 400 : 0);
+    return () => clearTimeout(timeoutId);
+  }, [searchValue, fetchProjects]);
+
+  const handleSearchChange = useCallback((e) => {
     setSearchValue(e.target.value);
-  };
+  }, []);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchValue('');
-  };
+  }, []);
 
-  const columns = [
-    { header: t('projects.projectNumber'), accessor: 'projectNumber' },
+  const columns = useMemo(() => [
+    {
+      header: t('projects.projectNumber'),
+      accessor: 'projectNumber',
+      render: (row) => (
+        <span className="font-mono text-sm font-medium text-secondary-900">
+          {row.projectNumber}
+        </span>
+      )
+    },
     {
       header: t('projects.projectName'),
       accessor: 'projectName',
-      render: (row) => language === 'ar' && row.projectNameAr ? row.projectNameAr : row.projectName
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <FolderIcon className="w-5 h-5 text-primary-600" />
+          </div>
+          <span className="font-medium text-secondary-900">
+            {language === 'ar' && row.projectNameAr ? row.projectNameAr : row.projectName}
+          </span>
+        </div>
+      )
     },
-    { header: t('projects.country'), accessor: 'country' },
+    {
+      header: t('projects.country'),
+      accessor: 'country',
+      render: (row) => (
+        <span className="text-secondary-600">{row.country}</span>
+      )
+    },
     {
       header: t('projects.status'),
       render: (row) => (
-        <Badge status={row.status}>{t(`projects.statuses.${row.status}`)}</Badge>
+        <Badge status={row.status} dot>
+          {t(`projects.statuses.${row.status}`)}
+        </Badge>
       ),
     },
     {
       header: t('projects.progress'),
-      render: (row) => `${row.progress}%`,
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-2 bg-secondary-100 rounded-full overflow-hidden max-w-[100px]">
+            <div
+              className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500"
+              style={{ width: `${row.progress}%` }}
+            />
+          </div>
+          <span className="text-sm font-medium text-secondary-700 w-10">
+            {row.progress}%
+          </span>
+        </div>
+      ),
     },
     {
       header: t('projects.contractor'),
-      render: (row) => row.contractor?.fullName || t('common.n/a'),
+      render: (row) => (
+        <span className="text-secondary-600">
+          {row.contractor?.fullName || t('common.n/a')}
+        </span>
+      ),
     },
     {
       header: t('common.date'),
-      render: (row) => formatDate(row.createdAt),
+      render: (row) => (
+        <span className="text-secondary-500 text-sm">
+          {formatDate(row.createdAt)}
+        </span>
+      ),
     },
-  ];
+  ], [t, language]);
 
-  const handleViewChange = (newView) => {
+  const handleViewChange = useCallback((newView) => {
     setView(newView);
     localStorage.setItem('projectsView', newView);
-  };
+  }, []);
 
-  const handleItemClick = (row) => {
+  const handleItemClick = useCallback((row) => {
     window.location.href = `/projects/${row._id}`;
-  };
+  }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('projects.title')}</h1>
-        <div className="flex items-center gap-4">
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="section-header">
+        <div>
+          <h1 className="section-title">{t('projects.title')}</h1>
+          <p className="section-subtitle">
+            {t('projects.subtitle')}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
           <ViewToggle view={view} onViewChange={handleViewChange} />
           <Link to="/projects/new">
-            <Button>
-              <PlusIcon className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+            <Button icon={PlusIcon}>
               {t('projects.newProject')}
             </Button>
           </Link>
         </div>
       </div>
 
-      <Card>
-        {/* Search Input */}
-        <div className="mb-4 relative">
-          <div className="absolute inset-y-0 ltr:left-0 rtl:right-0 ltr:pl-3 rtl:pr-3 flex items-center pointer-events-none">
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
+      {/* Content Card */}
+      <Card className="overflow-hidden">
+        {/* Search */}
+        <div className="p-4 border-b border-secondary-100">
+          <SearchInput
             value={searchValue}
             onChange={handleSearchChange}
-            placeholder={t('common.search') + '... (Project Number, Name, Description, Country, etc.)'}
-            className="block w-full ltr:pl-10 rtl:pr-10 ltr:pr-10 rtl:pl-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            onClear={clearSearch}
+            placeholder={t('projects.searchPlaceholder')}
+            className="max-w-md"
           />
-          {searchValue && (
-            <button
-              onClick={clearSearch}
-              className="absolute inset-y-0 ltr:right-0 rtl:left-0 ltr:pr-3 rtl:pl-3 flex items-center"
-            >
-              <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-            </button>
+        </div>
+
+        {/* Data View */}
+        <div className="p-4">
+          {view === 'table' ? (
+            <Table
+              columns={columns}
+              data={projects}
+              loading={loading}
+              onRowClick={handleItemClick}
+              emptyMessage={t('projects.noProjects')}
+            />
+          ) : (
+            <CardView
+              data={projects}
+              columns={columns}
+              loading={loading}
+              onItemClick={handleItemClick}
+              emptyMessage={t('projects.noProjects')}
+            />
           )}
         </div>
 
-        {view === 'table' ? (
-          <Table
-            columns={columns}
-            data={projects}
-            loading={loading}
-            onRowClick={handleItemClick}
+        {/* Pagination */}
+        <div className="px-4 pb-4">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={fetchProjects}
           />
-        ) : (
-          <CardView
-            data={projects}
-            columns={columns}
-            loading={loading}
-            onItemClick={handleItemClick}
-            emptyMessage={t('projects.noProjects')}
-          />
-        )}
-        <Pagination
-          currentPage={pagination.page}
-          totalPages={pagination.totalPages}
-          onPageChange={fetchProjects}
-        />
+        </div>
       </Card>
     </div>
   );
-};
+});
+
+ProjectsList.displayName = 'ProjectsList';
 
 export default ProjectsList;
-

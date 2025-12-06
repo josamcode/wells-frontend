@@ -1,112 +1,66 @@
-import React from 'react';
+import React, { Component } from 'react';
+import Button from './Button';
+import { ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
-class ErrorBoundary extends React.Component {
+class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI.
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error details for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    this.setState({
-      error: error,
-      errorInfo: errorInfo,
-    });
-
-    // Log to console with full details
-    console.group('🚨 Error Boundary Caught Error');
-    console.error('Error:', error);
-    console.error('Error Info:', errorInfo);
-    console.error('Component Stack:', errorInfo.componentStack);
-    console.groupEnd();
+    // Log error only in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error caught by boundary:', error, errorInfo);
+    }
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
 
   render() {
     if (this.state.hasError) {
-      // Custom fallback UI
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg border border-red-200 p-6">
-            <div className="flex items-center mb-4">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-8 w-8 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <div className="ltr:ml-3 rtl:mr-3">
-                <h3 className="text-lg font-medium text-red-800">
-                  Something went wrong
-                </h3>
-              </div>
+        <div className="min-h-[60vh] flex items-center justify-center p-6">
+          <div className="text-center max-w-md animate-fade-in">
+            {/* Icon */}
+            <div className="w-20 h-20 rounded-full bg-danger-100 flex items-center justify-center mx-auto mb-6">
+              <ExclamationTriangleIcon className="w-10 h-10 text-danger-500" />
             </div>
 
-            <div className="mt-4">
-              <p className="text-sm text-gray-600 mb-4">
-                An error occurred while rendering this component. This is usually caused by:
-              </p>
-              <ul className="list-disc list-inside text-sm text-gray-600 mb-4 space-y-1">
-                <li>Invalid component import/export</li>
-                <li>Undefined component being rendered</li>
-                <li>Missing or incorrect props</li>
-                <li>Build/compilation error</li>
-              </ul>
+            {/* Content */}
+            <h2 className="text-2xl font-bold text-secondary-900 mb-3">
+              Something went wrong
+            </h2>
+            <p className="text-secondary-500 mb-6">
+              We encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.
+            </p>
 
-              {this.state.error && (
-                <div className="mt-4 p-4 bg-red-50 rounded border border-red-200">
-                  <p className="text-sm font-semibold text-red-800 mb-2">
-                    Error Message:
-                  </p>
-                  <pre className="text-xs text-red-700 overflow-auto max-h-40">
-                    {this.state.error.toString()}
-                  </pre>
-                </div>
-              )}
-
-              {this.state.errorInfo && this.state.errorInfo.componentStack && (
-                <div className="mt-4 p-4 bg-gray-50 rounded border border-gray-200">
-                  <p className="text-sm font-semibold text-gray-800 mb-2">
-                    Component Stack:
-                  </p>
-                  <pre className="text-xs text-gray-700 overflow-auto max-h-40 whitespace-pre-wrap">
-                    {this.state.errorInfo.componentStack}
-                  </pre>
-                </div>
-              )}
-
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  Reload Page
-                </button>
-                <button
-                  onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Try Again
-                </button>
+            {/* Error details in development */}
+            {process.env.NODE_ENV !== 'production' && this.state.error && (
+              <div className="mb-6 p-4 bg-secondary-50 rounded-xl text-left">
+                <p className="text-xs font-mono text-danger-600 break-all">
+                  {this.state.error.toString()}
+                </p>
               </div>
+            )}
 
-              <div className="mt-4 text-xs text-gray-500">
-                <p>Check the browser console for more details.</p>
-              </div>
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button onClick={this.handleRetry} icon={ArrowPathIcon}>
+                Try Again
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => window.location.href = '/'}
+              >
+                Go to Dashboard
+              </Button>
             </div>
           </div>
         </div>
@@ -118,4 +72,3 @@ class ErrorBoundary extends React.Component {
 }
 
 export default ErrorBoundary;
-

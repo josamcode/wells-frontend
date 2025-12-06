@@ -112,7 +112,7 @@ const ProjectForm = () => {
         notes: project.notes || '',
       });
     } catch (error) {
-      toast.error('Failed to fetch project');
+      toast.error(t('projects.failedToFetchProject'));
       navigate('/projects');
     }
   };
@@ -175,14 +175,14 @@ const ProjectForm = () => {
     try {
       if (isEditMode) {
         await projectsAPI.update(id, payload);
-        toast.success('Project updated successfully');
+        toast.success(t('projects.projectUpdated'));
       } else {
         await projectsAPI.create(payload);
-        toast.success('Project created successfully');
+        toast.success(t('projects.projectCreated'));
       }
       navigate('/projects');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save project');
+      toast.error(error.response?.data?.message || t('projects.failedToSaveProject'));
     } finally {
       setLoading(false);
     }
@@ -209,10 +209,10 @@ const ProjectForm = () => {
   }));
 
   const priorityOptions = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'urgent', label: 'Urgent' },
+    { value: 'low', label: t('projects.priorityLow') },
+    { value: 'medium', label: t('projects.priorityMedium') },
+    { value: 'high', label: t('projects.priorityHigh') },
+    { value: 'urgent', label: t('projects.priorityUrgent') },
   ];
 
   return (
@@ -225,7 +225,7 @@ const ProjectForm = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
-        <Card title="Basic Information">
+        <Card title={t('projects.basicInformation')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Project Number - Only visible to admins or project owners */}
             {(() => {
@@ -243,7 +243,7 @@ const ProjectForm = () => {
                     placeholder="Leave empty for auto-generation"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Leave empty to auto-generate project number (format: WP-YYYYMM-#####)
+                    {t('projects.autoGenerateNote')}
                   </p>
                 </div>
               )}
@@ -267,7 +267,7 @@ const ProjectForm = () => {
         </Card>
 
         {/* Location */}
-        <Card title="Location">
+        <Card title={t('projects.location')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               label={t('projects.country')}
@@ -315,7 +315,7 @@ const ProjectForm = () => {
         </Card>
 
         {/* Project Management */}
-        <Card title="Project Management">
+        <Card title={t('projects.projectManagement')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               label={t('projects.status')}
@@ -359,7 +359,7 @@ const ProjectForm = () => {
         </Card>
 
         {/* Budget & Timeline */}
-        <Card title="Budget & Timeline">
+        <Card title={t('projects.budgetTimeline')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex gap-2">
               <Input
@@ -372,7 +372,7 @@ const ProjectForm = () => {
                 className="flex-1"
               />
               <Select
-                label="Currency"
+                label={t('projects.currency')}
                 name="budgetCurrency"
                 value={formData.budgetCurrency}
                 onChange={handleChange}
@@ -403,10 +403,10 @@ const ProjectForm = () => {
         </Card>
 
         {/* Well Details */}
-        <Card title="Well Specifications">
+        <Card title={t('projects.wellSpecifications')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Depth (meters)"
+              label={t('projects.depth')}
               name="wellDepth"
               type="number"
               step="0.1"
@@ -414,7 +414,7 @@ const ProjectForm = () => {
               onChange={handleChange}
             />
             <Input
-              label="Diameter (cm)"
+              label={t('projects.diameter')}
               name="wellDiameter"
               type="number"
               step="0.1"
@@ -422,20 +422,20 @@ const ProjectForm = () => {
               onChange={handleChange}
             />
             <Input
-              label="Capacity (L/h)"
+              label={t('projects.capacity')}
               name="wellCapacity"
               type="number"
               value={formData.wellCapacity}
               onChange={handleChange}
             />
             <Input
-              label="Water Quality"
+              label={t('projects.waterQuality')}
               name="wellWaterQuality"
               value={formData.wellWaterQuality}
               onChange={handleChange}
             />
             <Input
-              label="Pump Type"
+              label={t('projects.pumpType')}
               name="wellPumpType"
               value={formData.wellPumpType}
               onChange={handleChange}
@@ -444,7 +444,7 @@ const ProjectForm = () => {
         </Card>
 
         {/* Beneficiaries */}
-        <Card title="Beneficiaries">
+        <Card title={t('projects.beneficiaries')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Estimated Families"
@@ -464,23 +464,23 @@ const ProjectForm = () => {
         </Card>
 
         {/* Donor Information */}
-        <Card title="Donor Information">
+        <Card title={t('projects.donorInformation')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Donor Name"
+              label={t('projects.donorName')}
               name="donorName"
               value={formData.donorName}
               onChange={handleChange}
             />
             <Input
-              label="Donor Email"
+              label={t('projects.donorEmail')}
               name="donorEmail"
               type="email"
               value={formData.donorEmail}
               onChange={handleChange}
             />
             <Input
-              label="Donor Phone"
+              label={t('projects.donorPhone')}
               name="donorPhone"
               value={formData.donorPhone}
               onChange={handleChange}
@@ -489,9 +489,9 @@ const ProjectForm = () => {
         </Card>
 
         {/* Notes */}
-        <Card title="Notes">
+        <Card title={t('projects.notes')}>
           <Textarea
-            label="Additional Notes"
+            label={t('projects.additionalNotes')}
             name="notes"
             value={formData.notes}
             onChange={handleChange}

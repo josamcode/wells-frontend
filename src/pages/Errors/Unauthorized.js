@@ -1,29 +1,51 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/common/Button';
-import { LockClosedIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ArrowLeftIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline';
 
-const Unauthorized = () => {
+const Unauthorized = memo(() => {
+  const { t } = useTranslation();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full text-center">
-        <LockClosedIcon className="mx-auto h-24 w-24 text-red-500" />
-        <h1 className="mt-6 text-4xl font-bold text-gray-900">403</h1>
-        <h2 className="mt-2 text-2xl font-semibold text-gray-700">
-          Access Denied
-        </h2>
-        <p className="mt-2 text-gray-600">
-          You don't have permission to access this page.
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary-50 via-white to-secondary-100 px-4">
+      <div className="text-center max-w-lg animate-fade-in">
+        {/* 403 Illustration */}
+        <div className="relative mb-8">
+          <div className="text-[180px] font-bold text-secondary-100 select-none leading-none">
+            403
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-32 h-32 rounded-full bg-danger-100 flex items-center justify-center">
+              <ShieldExclamationIcon className="w-16 h-16 text-danger-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <h1 className="text-3xl font-bold text-secondary-900 mb-3">
+          {t('errors.unauthorized') || 'Access Denied'}
+        </h1>
+        <p className="text-secondary-500 mb-8 text-lg">
+          {t('errors.unauthorizedDescription') || "You don't have permission to access this page. Please contact your administrator."}
         </p>
-        <div className="mt-8">
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Button onClick={() => window.history.back()} variant="secondary" icon={ArrowLeftIcon}>
+            Go Back
+          </Button>
           <Link to="/">
-            <Button>Go to Dashboard</Button>
+            <Button icon={HomeIcon}>
+              Back to Dashboard
+            </Button>
           </Link>
         </div>
       </div>
     </div>
   );
-};
+});
+
+Unauthorized.displayName = 'Unauthorized';
 
 export default Unauthorized;
-

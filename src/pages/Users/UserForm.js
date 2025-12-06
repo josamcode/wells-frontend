@@ -8,6 +8,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import { COUNTRIES } from '../../utils/constants';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const UserForm = () => {
   const { t } = useTranslation();
@@ -16,6 +17,8 @@ const UserForm = () => {
   const isEditMode = !!id;
 
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [setPassword, setSetPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -23,6 +26,7 @@ const UserForm = () => {
     phone: '',
     organization: '',
     country: '',
+    password: '',
     isActive: true,
   });
 
@@ -46,7 +50,7 @@ const UserForm = () => {
         isActive: user.isActive !== undefined ? user.isActive : true,
       });
     } catch (error) {
-      toast.error('Failed to fetch user');
+      toast.error(t('users.failedToFetch') || 'Failed to fetch user');
       navigate('/users');
     }
   };
@@ -64,16 +68,25 @@ const UserForm = () => {
     setLoading(true);
 
     try {
+      // Prepare data - only include password if it's set
+      const submitData = { ...formData };
+      if (!setPassword || !submitData.password || submitData.password.trim() === '') {
+        delete submitData.password;
+      }
+
       if (isEditMode) {
-        await usersAPI.update(id, formData);
-        toast.success('User updated successfully');
+        await usersAPI.update(id, submitData);
+        toast.success(t('users.userUpdated') || 'User updated successfully');
       } else {
-        await usersAPI.create(formData);
-        toast.success('User created successfully. Temporary password sent via email.');
+        await usersAPI.create(submitData);
+        const message = submitData.password
+          ? t('users.userCreatedWithPassword') || 'User created successfully with the provided password.'
+          : t('users.userCreated') || 'User created successfully. Temporary password sent via email.';
+        toast.success(message);
       }
       navigate('/users');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save user');
+      toast.error(error.response?.data?.message || t('users.failedToSave') || 'Failed to save user');
     } finally {
       setLoading(false);
     }
@@ -101,7 +114,7 @@ const UserForm = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card title="User Information">
+        <Card title={t('users.userInformation')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label={t('users.fullName')}
@@ -121,6 +134,108 @@ const UserForm = () => {
               disabled={isEditMode}
               className="md:col-span-2"
             />
+            {/* Password field */}
+            <div className="md:col-span-2">
+              {!isEditMode ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="setPassword"
+                      checked={setPassword}
+                      onChange={(e) => {
+                        setSetPassword(e.target.checked);
+                        if (!e.target.checked) {
+                          setFormData({ ...formData, password: '' });
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <label htmlFor="setPassword" className="text-sm font-medium text-gray-700">
+                      {t('users.setPassword') || 'Set password (leave unchecked to auto-generate)'}
+                    </label>
+                  </div>
+                  {setPassword && (
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-2">
+                        {t('auth.password')}
+                      </label>
+                      <div className="relative">
+                        <input
+                          name="password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={formData.password}
+                          onChange={handleChange}
+                          placeholder={t('users.passwordPlaceholder') || 'Enter password (min 8 characters)'}
+                          minLength={8}
+                          className="w-full ltr:pr-12 rtl:pl-12 px-4 py-3 bg-white border border-secondary-200 rounded-xl text-secondary-900 placeholder-secondary-400 transition-all duration-200 hover:border-secondary-300 focus:outline-none focus:ring-2 focus:border-primary-500 focus:ring-primary-500/20"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 ltr:right-0 rtl:left-0 ltr:pr-4 rtl:pl-4 flex items-center text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? (
+                            <EyeSlashIcon className="w-5 h-5" />
+                          ) : (
+                            <EyeIcon className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="setPasswordEdit"
+                      checked={setPassword}
+                      onChange={(e) => {
+                        setSetPassword(e.target.checked);
+                        if (!e.target.checked) {
+                          setFormData({ ...formData, password: '' });
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <label htmlFor="setPasswordEdit" className="text-sm font-medium text-gray-700">
+                      {t('users.changePassword') || 'Change password'}
+                    </label>
+                  </div>
+                  {setPassword && (
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-2">
+                        {t('auth.newPassword')}
+                      </label>
+                      <div className="relative">
+                        <input
+                          name="password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={formData.password}
+                          onChange={handleChange}
+                          placeholder={t('users.passwordPlaceholder') || 'Enter new password (min 8 characters)'}
+                          minLength={8}
+                          className="w-full ltr:pr-12 rtl:pl-12 px-4 py-3 bg-white border border-secondary-200 rounded-xl text-secondary-900 placeholder-secondary-400 transition-all duration-200 hover:border-secondary-300 focus:outline-none focus:ring-2 focus:border-primary-500 focus:ring-primary-500/20"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 ltr:right-0 rtl:left-0 ltr:pr-4 rtl:pl-4 flex items-center text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? (
+                            <EyeSlashIcon className="w-5 h-5" />
+                          ) : (
+                            <EyeIcon className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <Input
               label={t('users.phone')}
               name="phone"
@@ -142,7 +257,7 @@ const UserForm = () => {
               onChange={handleChange}
             />
             <Select
-              label="Country"
+              label={t('projects.country')}
               name="country"
               value={formData.country}
               onChange={handleChange}
@@ -167,11 +282,10 @@ const UserForm = () => {
           </div>
         </Card>
 
-        {!isEditMode && (
+        {!isEditMode && !setPassword && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              <strong>Note:</strong> A temporary password will be generated and sent to the user's
-              email. The user will be required to change it upon first login.
+              <strong>{t('common.note')}:</strong> {t('users.tempPasswordNote')}
             </p>
           </div>
         )}

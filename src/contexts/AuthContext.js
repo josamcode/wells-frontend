@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../api/auth';
 import { toast } from 'react-toastify';
+import i18n from '../i18n';
 
 const AuthContext = createContext();
 
@@ -41,16 +42,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.login(email, password);
       const { user, token } = response.data.data;
-      
+
       setUser(user);
       setToken(token);
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      
-      toast.success('Logged in successfully');
+
+      toast.success(i18n.t('auth.loginSuccess'));
       return true;
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.response?.data?.message || i18n.t('auth.loginFailed');
       toast.error(message);
       return false;
     }
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    toast.info('Logged out successfully');
+    toast.info(i18n.t('auth.logoutSuccess'));
   };
 
   const updateProfile = async (data) => {
@@ -69,10 +70,10 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.updateProfile(data);
       setUser(response.data.data);
       localStorage.setItem('user', JSON.stringify(response.data.data));
-      toast.success('Profile updated successfully');
+      toast.success(i18n.t('auth.profileUpdated'));
       return true;
     } catch (error) {
-      toast.error('Failed to update profile');
+      toast.error(i18n.t('auth.failedToUpdateProfile'));
       return false;
     }
   };

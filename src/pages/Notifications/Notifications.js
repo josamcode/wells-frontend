@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -6,7 +6,7 @@ import { notificationsAPI } from '../../api/notifications';
 import { toast } from 'react-toastify';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import Badge from '../../components/common/Badge';
+import { CardSkeleton } from '../../components/common/Loading';
 import { formatDateTime } from '../../utils/helpers';
 import {
   BellIcon,
@@ -15,214 +15,220 @@ import {
   DocumentTextIcon,
   FolderIcon,
   UserIcon,
+  ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 
-const Notifications = () => {
+const Notifications = memo(() => {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, unread
+  const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [filter]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const params = filter === 'unread' ? { unreadOnly: 'true', limit: 50 } : { limit: 50 };
       const response = await notificationsAPI.getAll(params);
       setNotifications(response.data.data.notifications);
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      // Silent fail
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
-  const handleMarkAsRead = async (id) => {
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const handleMarkAsRead = useCallback(async (id) => {
     try {
       await notificationsAPI.markAsRead(id);
       fetchNotifications();
     } catch (error) {
-      toast.error('Failed to mark as read');
+      toast.error(t('notifications.failedToMarkAsRead'));
     }
-  };
+  }, [fetchNotifications]);
 
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllAsRead = useCallback(async () => {
     try {
       await notificationsAPI.markAllAsRead();
-      toast.success('All notifications marked as read');
+      toast.success(t('notifications.allMarkedAsRead'));
       fetchNotifications();
     } catch (error) {
-      toast.error('Failed to mark all as read');
+      toast.error(t('notifications.failedToMarkAllAsRead'));
     }
-  };
+  }, [fetchNotifications]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     try {
       await notificationsAPI.delete(id);
-      toast.success('Notification deleted');
+      toast.success(t('notifications.notificationDeleted'));
       fetchNotifications();
     } catch (error) {
-      toast.error('Failed to delete notification');
+      toast.error(t('notifications.failedToDelete'));
     }
-  };
+  }, [fetchNotifications]);
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'project_assigned':
-      case 'project_status_changed':
-        return FolderIcon;
-      case 'report_submitted':
-      case 'report_approved':
-      case 'report_rejected':
-        return DocumentTextIcon;
-      case 'user_role_changed':
-        return UserIcon;
-      default:
-        return BellIcon;
-    }
-  };
+  const getIcon = useCallback((type) => {
+    const icons = {
+      project_assigned: FolderIcon,
+      project_status_changed: FolderIcon,
+      report_submitted: DocumentTextIcon,
+      report_approved: DocumentTextIcon,
+      report_rejected: DocumentTextIcon,
+      user_role_changed: UserIcon,
+    };
+    return icons[type] || BellIcon;
+  }, []);
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high':
-        return 'border-l-red-500';
-      case 'medium':
-        return 'border-l-yellow-500';
-      case 'low':
-        return 'border-l-blue-500';
-      default:
-        return 'border-l-gray-300';
-    }
-  };
+  const getPriorityStyles = useCallback((priority) => {
+    const styles = {
+      high: 'border-l-danger-500',
+      medium: 'border-l-warning-500',
+      low: 'border-l-info-500',
+    };
+    return styles[priority] || 'border-l-secondary-300';
+  }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-48 skeleton rounded-lg" />
+          <div className="h-10 w-32 skeleton rounded-lg" />
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <CardSkeleton key={i} lines={2} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          {t('notifications.title')}
-        </h1>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="section-header">
+        <div>
+          <h1 className="section-title">{t('notifications.title')}</h1>
+          <p className="section-subtitle">
+            {t('notifications.stayUpdated')}
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant={filter === 'all' ? 'primary' : 'secondary'}
-            onClick={() => setFilter('all')}
-          >
-            All
-          </Button>
-          <Button
-            size="sm"
-            variant={filter === 'unread' ? 'primary' : 'secondary'}
-            onClick={() => setFilter('unread')}
-          >
-            Unread
-          </Button>
-          <Button size="sm" variant="secondary" onClick={handleMarkAllAsRead}>
-            <CheckCircleIcon className="w-4 h-4 ltr:mr-1 rtl:ml-1" />
+          <div className="inline-flex rounded-xl bg-secondary-100 p-1">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'all'
+                ? 'bg-white text-secondary-900 shadow-soft'
+                : 'text-secondary-500 hover:text-secondary-700'
+                }`}
+            >
+              {t('notifications.all')}
+            </button>
+            <button
+              onClick={() => setFilter('unread')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'unread'
+                ? 'bg-white text-secondary-900 shadow-soft'
+                : 'text-secondary-500 hover:text-secondary-700'
+                }`}
+            >
+              {t('notifications.unread')}
+            </button>
+          </div>
+          <Button variant="secondary" size="sm" icon={CheckCircleIcon} onClick={handleMarkAllAsRead}>
             {t('notifications.markAllRead')}
           </Button>
         </div>
       </div>
 
-      <Card>
-        {notifications.length > 0 ? (
-          <div className="divide-y divide-gray-200">
-            {notifications.map((notification) => {
-              const Icon = getIcon(notification.type);
-              const title = notification.title[language] || notification.title.en;
-              const message = notification.message[language] || notification.message.en;
+      {/* Notifications List */}
+      {notifications.length > 0 ? (
+        <div className="space-y-4">
+          {notifications.map((notification) => {
+            const Icon = getIcon(notification.type);
+            const title = notification.title[language] || notification.title.en;
+            const message = notification.message[language] || notification.message.en;
 
-              return (
-                <div
-                  key={notification._id}
-                  className={`p-4 border-l-4 ${getPriorityColor(notification.priority)} ${notification.isRead ? 'bg-white' : 'bg-blue-50'
-                    }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${notification.isRead ? 'bg-gray-100' : 'bg-primary-100'
-                          }`}
-                      >
-                        <Icon
-                          className={`w-5 h-5 ${notification.isRead ? 'text-gray-500' : 'text-primary-600'
-                            }`}
-                        />
+            return (
+              <Card
+                key={notification._id}
+                className={`
+                  border-l-4 transition-all duration-200 hover:shadow-soft-lg
+                  ${getPriorityStyles(notification.priority)}
+                  ${notification.isRead ? 'bg-white' : 'bg-primary-50/50'}
+                `}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`
+                    w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
+                    ${notification.isRead ? 'bg-secondary-100' : 'bg-primary-100'}
+                  `}>
+                    <Icon className={`w-5 h-5 ${notification.isRead ? 'text-secondary-500' : 'text-primary-600'}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <p className={`text-sm font-semibold ${notification.isRead ? 'text-secondary-700' : 'text-secondary-900'}`}>
+                          {title}
+                        </p>
+                        <p className={`text-sm mt-1 ${notification.isRead ? 'text-secondary-500' : 'text-secondary-600'}`}>
+                          {message}
+                        </p>
+                        <p className="text-xs text-secondary-400 mt-2">
+                          {formatDateTime(notification.createdAt)}
+                        </p>
                       </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <p
-                            className={`text-sm font-medium ${notification.isRead ? 'text-gray-700' : 'text-gray-900'
-                              }`}
-                          >
-                            {title}
-                          </p>
-                          <p
-                            className={`text-sm mt-1 ${notification.isRead ? 'text-gray-500' : 'text-gray-700'
-                              }`}
-                          >
-                            {message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-2">
-                            {formatDateTime(notification.createdAt)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {!notification.isRead && (
-                            <button
-                              onClick={() => handleMarkAsRead(notification._id)}
-                              className="p-1 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded"
-                              title="Mark as read"
-                            >
-                              <CheckCircleIcon className="w-4 h-4" />
-                            </button>
-                          )}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {!notification.isRead && (
                           <button
-                            onClick={() => handleDelete(notification._id)}
-                            className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
-                            title="Delete"
+                            onClick={() => handleMarkAsRead(notification._id)}
+                            className="p-2 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
+                            title={t('common.markAsRead')}
                           >
-                            <XMarkIcon className="w-4 h-4" />
+                            <CheckCircleIcon className="w-4 h-4" />
                           </button>
-                        </div>
-                      </div>
-                      {notification.actionUrl && (
-                        <Link
-                          to={notification.actionUrl}
-                          className="inline-block mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                        )}
+                        <button
+                          onClick={() => handleDelete(notification._id)}
+                          className="p-2 text-secondary-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
+                          title={t('common.deleteItem')}
                         >
-                          View →
-                        </Link>
-                      )}
+                          <XMarkIcon className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
+                    {notification.actionUrl && (
+                      <Link
+                        to={notification.actionUrl}
+                        className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+                      >
+                        {t('notifications.viewDetails')}
+                        <ArrowRightIcon className="w-4 h-4" />
+                      </Link>
+                    )}
                   </div>
                 </div>
-              );
-            })}
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <div className="empty-state py-16">
+            <BellIcon className="w-16 h-16 text-secondary-300 mx-auto mb-4" />
+            <p className="text-lg font-semibold text-secondary-700">{t('notifications.noNotifications')}</p>
+            <p className="text-secondary-500 mt-1">{t('notifications.allCaughtUp')}</p>
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <BellIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-500">{t('notifications.noNotifications')}</p>
-          </div>
-        )}
-      </Card>
+        </Card>
+      )}
     </div>
   );
-};
+});
+
+Notifications.displayName = 'Notifications';
 
 export default Notifications;
-

@@ -1,109 +1,86 @@
-import React, { useState, useRef, useEffect, isValidElement } from 'react';
+import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { toast } from 'react-toastify';
 
-const InlineEditable = ({
+const InlineEditable = memo(({
   value,
   onSave,
+  canEdit = false,
   type = 'text',
   options = [],
-  canEdit = true,
-  className = '',
   displayValue,
+  fieldName = 'field',
+  className = '',
   placeholder = '',
-  validation,
-  fieldName = '',
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value || '');
-  const [isSaving, setIsSaving] = useState(false);
+  const [editValue, setEditValue] = useState(value);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      if (type === 'text' || type === 'number') {
-        inputRef.current.select();
-      }
     }
-  }, [isEditing, type]);
+  }, [isEditing]);
 
-  useEffect(() => {
-    setEditValue(value || '');
+  const handleEdit = useCallback((e) => {
+    e.stopPropagation();
+    setEditValue(value);
+    setIsEditing(true);
   }, [value]);
 
-  const handleEdit = (e) => {
-    e.stopPropagation();
-    if (!canEdit) return;
-    setIsEditing(true);
-    setEditValue(value || '');
-  };
-
-  const handleCancel = (e) => {
-    e.stopPropagation();
+  const handleCancel = useCallback((e) => {
+    e?.stopPropagation();
     setIsEditing(false);
-    setEditValue(value || '');
-  };
+    setEditValue(value);
+  }, [value]);
 
-  const handleSave = async (e) => {
-    e.stopPropagation();
-    
-    // Validation
-    if (validation && !validation(editValue)) {
-      return;
-    }
-
+  const handleSave = useCallback(async (e) => {
+    e?.stopPropagation();
     if (editValue === value) {
       setIsEditing(false);
       return;
     }
 
-    setIsSaving(true);
+    setLoading(true);
     try {
       await onSave(editValue);
       setIsEditing(false);
-      toast.success(`${fieldName || 'Field'} updated successfully`);
     } catch (error) {
-      toast.error(error.response?.data?.message || `Failed to update ${fieldName || 'field'}`);
-      setEditValue(value || '');
+      // Revert on error
+      setEditValue(value);
     } finally {
-      setIsSaving(false);
+      setLoading(false);
     }
-  };
+  }, [editValue, value, onSave]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && type !== 'textarea') {
       handleSave(e);
     } else if (e.key === 'Escape') {
       handleCancel(e);
     }
-  };
+  }, [type, handleSave, handleCancel]);
 
   if (!canEdit) {
-    const display = displayValue || value || '-';
-    const isReactElement = isValidElement(display);
-    return (
-      <span className={className}>
-        {isReactElement ? display : display}
-      </span>
-    );
+    return <span className={className}>{displayValue || value || '—'}</span>;
   }
 
   if (isEditing) {
     return (
-      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         {type === 'select' ? (
           <select
             ref={inputRef}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 px-2 py-1 text-sm border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
-            disabled={isSaving}
+            className="px-2 py-1 text-sm border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 bg-white"
+            disabled={loading}
           >
-            {options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>
@@ -115,22 +92,22 @@ const InlineEditable = ({
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="flex-1 px-2 py-1 text-sm border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
-            disabled={isSaving}
+            className="px-2 py-1 text-sm border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 w-full min-w-[100px]"
+            disabled={loading}
           />
         )}
         <button
           onClick={handleSave}
-          disabled={isSaving}
-          className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+          disabled={loading}
+          className="p-1 text-success-600 hover:bg-success-50 rounded transition-colors disabled:opacity-50"
           title="Save"
         >
           <CheckIcon className="w-4 h-4" />
         </button>
         <button
           onClick={handleCancel}
-          disabled={isSaving}
-          className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+          disabled={loading}
+          className="p-1 text-secondary-500 hover:bg-secondary-100 rounded transition-colors disabled:opacity-50"
           title="Cancel"
         >
           <XMarkIcon className="w-4 h-4" />
@@ -139,24 +116,20 @@ const InlineEditable = ({
     );
   }
 
-  const display = displayValue || value || '-';
-  const isReactElement = isValidElement(display);
-  
   return (
-    <div className="flex items-center gap-2 group">
-      <div className={className}>
-        {isReactElement ? display : display}
-      </div>
+    <div className="group flex items-center gap-2">
+      <span className={className}>{displayValue || value || '—'}</span>
       <button
         onClick={handleEdit}
-        className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-all duration-200 flex-shrink-0"
-        title="Edit"
+        className="p-1 text-secondary-400 hover:text-primary-600 hover:bg-primary-50 rounded opacity-0 group-hover:opacity-100 transition-all"
+        title={`Edit ${fieldName}`}
       >
         <PencilIcon className="w-3.5 h-3.5" />
       </button>
     </div>
   );
-};
+});
+
+InlineEditable.displayName = 'InlineEditable';
 
 export default InlineEditable;
-
