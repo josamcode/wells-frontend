@@ -49,8 +49,8 @@ const Profile = memo(() => {
         </div>
 
         {/* Profile Info */}
-        <div className="px-6 pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 z-10">
+        <div className="px-6 pb-6 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 relative z-10">
             {/* Avatar */}
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-3xl font-bold shadow-glow border-4 border-white">
               {getInitials(user?.fullName)}

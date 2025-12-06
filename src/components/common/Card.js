@@ -38,7 +38,7 @@ const Card = memo(({
           )}
         </div>
       )}
-      <div className={padding ? 'p-6' : ''}>{children}</div>
+      <div className={padding ? 'p-3' : ''}>{children}</div>
     </div>
   );
 });

@@ -165,9 +165,9 @@ const ProjectsList = memo(() => {
       </div>
 
       {/* Content Card */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden px-0">
         {/* Search */}
-        <div className="p-4 border-b border-secondary-100">
+        <div className="p-0 border-b border-secondary-100">
           <SearchInput
             value={searchValue}
             onChange={handleSearchChange}
@@ -178,7 +178,7 @@ const ProjectsList = memo(() => {
         </div>
 
         {/* Data View */}
-        <div className="p-4">
+        <div className="p-3 px-0">
           {view === 'table' ? (
             <Table
               columns={columns}
@@ -199,7 +199,7 @@ const ProjectsList = memo(() => {
         </div>
 
         {/* Pagination */}
-        <div className="px-4 pb-4">
+        <div className="px-3 pb-4">
           <Pagination
             currentPage={pagination.page}
             totalPages={pagination.totalPages}
