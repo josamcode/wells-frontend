@@ -49,11 +49,11 @@ const Login = memo(() => {
         <div className="w-full max-w-md mx-auto">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-glow">
+            <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4">
               <img
                 src="/logo.png"
                 alt="Logo"
-                className="h-14 w-14 object-contain"
+                className="h-full w-full object-contain"
                 onError={(e) => {
                   e.target.style.display = 'none';
                 }}
