@@ -48,9 +48,9 @@ const ProjectForm = () => {
     wellPumpType: '',
     estimatedFamilies: '',
     estimatedPeople: '',
-    donorName: '',
-    donorEmail: '',
-    donorPhone: '',
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
     priority: 'medium',
     notes: '',
   });
@@ -105,9 +105,9 @@ const ProjectForm = () => {
         wellPumpType: project.wellDetails?.pumpType || '',
         estimatedFamilies: project.beneficiaries?.estimatedFamilies || '',
         estimatedPeople: project.beneficiaries?.estimatedPeople || '',
-        donorName: project.donor?.name || '',
-        donorEmail: project.donor?.email || '',
-        donorPhone: project.donor?.phone || '',
+        clientName: project.client?.name || '',
+        clientEmail: project.client?.email || '',
+        clientPhone: project.client?.phone || '',
         priority: project.priority || 'medium',
         notes: project.notes || '',
       });
@@ -158,10 +158,10 @@ const ProjectForm = () => {
         estimatedFamilies: parseInt(formData.estimatedFamilies) || undefined,
         estimatedPeople: parseInt(formData.estimatedPeople) || undefined,
       },
-      donor: {
-        name: formData.donorName || undefined,
-        email: formData.donorEmail || undefined,
-        phone: formData.donorPhone || undefined,
+      client: {
+        name: formData.clientName || undefined,
+        email: formData.clientEmail || undefined,
+        phone: formData.clientPhone || undefined,
       },
       priority: formData.priority,
       notes: formData.notes,
@@ -463,26 +463,26 @@ const ProjectForm = () => {
           </div>
         </Card>
 
-        {/* Donor Information */}
-        <Card title={t('projects.donorInformation')}>
+        {/* client Information */}
+        <Card title={t('projects.clientInformation')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label={t('projects.donorName')}
-              name="donorName"
-              value={formData.donorName}
+              label={t('projects.clientName')}
+              name="clientName"
+              value={formData.clientName}
               onChange={handleChange}
             />
             <Input
-              label={t('projects.donorEmail')}
-              name="donorEmail"
+              label={t('projects.clientEmail')}
+              name="clientEmail"
               type="email"
-              value={formData.donorEmail}
+              value={formData.clientEmail}
               onChange={handleChange}
             />
             <Input
-              label={t('projects.donorPhone')}
-              name="donorPhone"
-              value={formData.donorPhone}
+              label={t('projects.clientPhone')}
+              name="clientPhone"
+              value={formData.clientPhone}
               onChange={handleChange}
             />
           </div>

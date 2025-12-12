@@ -10,5 +10,9 @@ export const projectsAPI = {
   delete: (id) => axios.delete(`/projects/${id}`),
   toggleArchive: (id) => axios.patch(`/projects/${id}/toggle-archive`),
   updateStatus: (id, status) => axios.patch(`/projects/${id}/status`, { status }),
+  review: (id, reviewStatus, reviewNotes) =>
+    axios.post(`/projects/${id}/review`, { reviewStatus, reviewNotes }),
+  evaluate: (id, evaluationData) =>
+    axios.post(`/projects/${id}/evaluate`, evaluationData),
 };
 

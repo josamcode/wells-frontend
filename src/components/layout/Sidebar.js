@@ -41,6 +41,12 @@ const Sidebar = memo(({ isOpen, closeSidebar, isCollapsed, toggleCollapse }) => 
       roles: ['super_admin', 'admin', 'project_manager', 'contractor', 'viewer'],
     },
     {
+      name: t('projects.myProjects') || 'My Projects',
+      href: '/my-projects',
+      icon: FolderIcon,
+      roles: ['client'],
+    },
+    {
       name: t('nav.projects'),
       href: '/projects',
       icon: FolderIcon,

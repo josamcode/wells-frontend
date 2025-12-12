@@ -28,6 +28,17 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async () => {
     try {
+      // Check if user is a client (stored in localStorage)
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser.isClient) {
+          // For clients, use stored user data (no profile endpoint)
+          setUser(parsedUser);
+          setLoading(false);
+          return;
+        }
+      }
       const response = await authAPI.getProfile();
       setUser(response.data.data);
     } catch (error) {
@@ -41,6 +52,25 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authAPI.login(email, password);
+      const { user, token } = response.data.data;
+
+      setUser(user);
+      setToken(token);
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      toast.success(i18n.t('auth.loginSuccess'));
+      return true;
+    } catch (error) {
+      const message = error.response?.data?.message || i18n.t('auth.loginFailed');
+      toast.error(message);
+      return false;
+    }
+  };
+
+  const clientLogin = async (phone) => {
+    try {
+      const response = await authAPI.clientLogin(phone);
       const { user, token } = response.data.data;
 
       setUser(user);
@@ -96,6 +126,7 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     login,
+    clientLogin,
     logout,
     updateProfile,
     hasPermission,

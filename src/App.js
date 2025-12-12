@@ -9,11 +9,13 @@ import Layout from './components/layout/Layout';
 
 // Lazy load all pages for better performance
 const Login = lazy(() => import('./pages/Auth/Login'));
+const ClientLogin = lazy(() => import('./pages/Auth/ClientLogin'));
 const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/Auth/ResetPassword'));
 
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const ProjectsList = lazy(() => import('./pages/Projects/ProjectsList'));
+const MyProjects = lazy(() => import('./pages/Projects/MyProjects'));
 const ProjectDetail = lazy(() => import('./pages/Projects/ProjectDetail'));
 const ProjectForm = lazy(() => import('./pages/Projects/ProjectForm'));
 const ReportsList = lazy(() => import('./pages/Reports/ReportsList'));
@@ -80,6 +82,14 @@ function App() {
         }
       />
       <Route
+        path="/client-login"
+        element={
+          <Suspense fallback={<AuthLoader />}>
+            <ClientLogin />
+          </Suspense>
+        }
+      />
+      <Route
         path="/forgot-password"
         element={
           <Suspense fallback={<AuthLoader />}>
@@ -105,46 +115,77 @@ function App() {
           </ProtectedRoute>
         }
       >
+        {/* Client-only route */}
         <Route
-          index
+          path="my-projects"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <Dashboard />
-            </Suspense>
+            <ProtectedRoute roles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <MyProjects />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="my-projects/:id"
+          element={
+            <ProtectedRoute roles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ProjectDetail />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
 
-        {/* Projects */}
+        {/* Regular routes (exclude clients) */}
+        <Route
+          index
+          element={
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <Dashboard />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="projects"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <ProjectsList />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ProjectsList />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="projects/new"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <ProjectForm />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ProjectForm />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="projects/:id"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <ProjectDetail />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ProjectDetail />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="projects/:id/edit"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <ProjectForm />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ProjectForm />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
 
@@ -152,33 +193,41 @@ function App() {
         <Route
           path="reports"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <ReportsList />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ReportsList />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="reports/new"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <ReportForm />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ReportForm />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="reports/:id"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <ReportDetail />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ReportDetail />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="reports/:id/edit"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <ReportForm />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <ReportForm />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
 
@@ -186,25 +235,31 @@ function App() {
         <Route
           path="users"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <UsersList />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <UsersList />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="users/new"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <UserForm />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <UserForm />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="users/:id/edit"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <UserForm />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <UserForm />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
 
@@ -212,33 +267,41 @@ function App() {
         <Route
           path="notifications"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <Notifications />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <Notifications />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="messages"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <Messages />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <Messages />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="settings"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <Settings />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <Settings />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
         <Route
           path="profile"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <Profile />
-            </Suspense>
+            <ProtectedRoute excludeRoles={['client']}>
+              <Suspense fallback={<PageLoader />}>
+                <Profile />
+              </Suspense>
+            </ProtectedRoute>
           }
         />
       </Route>

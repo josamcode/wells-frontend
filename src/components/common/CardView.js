@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CardSkeleton } from './Loading';
 import Badge from './Badge';
 import { FolderIcon, DocumentTextIcon, UserIcon, CalendarIcon, MapPinIcon } from '@heroicons/react/24/outline';
@@ -57,17 +58,18 @@ const CardView = memo(({
 // Enhanced Item Card Component
 const ItemCard = memo(({ item, columns, onItemClick, type }) => {
   const { t } = useTranslation();
-  // Get status column
-  const statusColumn = columns.find(col => col.header?.toLowerCase().includes('status'));
+  const { language } = useLanguage();
+  // Get status column (if columns provided)
+  const statusColumn = columns?.find(col => col.header?.toLowerCase().includes('status'));
   const status = statusColumn?.render ? statusColumn.render(item) : item.status;
 
-  // Get title (first column)
-  const titleColumn = columns[0];
-  const title = titleColumn?.render ? titleColumn.render(item) : item[titleColumn?.accessor];
+  // Get title (first column if columns provided, otherwise use item properties)
+  const titleColumn = columns?.[0];
+  const title = titleColumn?.render ? titleColumn.render(item) : (titleColumn?.accessor ? item[titleColumn.accessor] : null);
 
-  // Get subtitle (second column) 
-  const subtitleColumn = columns[1];
-  const subtitle = subtitleColumn?.render ? subtitleColumn.render(item) : item[subtitleColumn?.accessor];
+  // Get subtitle (second column if columns provided, otherwise use item properties)
+  const subtitleColumn = columns?.[1];
+  const subtitle = subtitleColumn?.render ? subtitleColumn.render(item) : (subtitleColumn?.accessor ? item[subtitleColumn.accessor] : null);
 
   // Determine card icon based on type or data
   const getCardIcon = () => {
@@ -123,10 +125,10 @@ const ItemCard = memo(({ item, columns, onItemClick, type }) => {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold text-secondary-900 line-clamp-2 leading-tight">
-              {typeof title === 'string' ? title : (item.projectName || item.title || item.fullName || t('common.untitled'))}
+              {title !== null && title !== undefined ? title : (language === 'ar' && item.projectNameAr ? item.projectNameAr : item.projectName) || item.title || item.fullName || t('common.untitled')}
             </h3>
             <p className="text-sm text-secondary-500 mt-1 truncate">
-              {typeof subtitle === 'string' ? subtitle : (item.projectNumber || item.reportNumber || item.email || '')}
+              {subtitle !== null && subtitle !== undefined ? subtitle : item.projectNumber || item.reportNumber || item.email || ''}
             </p>
           </div>
         </div>
