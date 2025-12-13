@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { projectsAPI } from '../../api/projects';
 import Card from '../../components/common/Card';
 import Table from '../../components/common/Table';
@@ -17,6 +18,7 @@ import { PlusIcon, FolderIcon } from '@heroicons/react/24/outline';
 const ProjectsList = memo(() => {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const { hasRole } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
@@ -156,11 +158,13 @@ const ProjectsList = memo(() => {
         </div>
         <div className="flex items-center gap-3">
           <ViewToggle view={view} onViewChange={handleViewChange} />
-          <Link to="/projects/new">
-            <Button icon={PlusIcon}>
-              {t('projects.newProject')}
-            </Button>
-          </Link>
+          {hasRole('super_admin', 'admin') && (
+            <Link to="/projects/new">
+              <Button icon={PlusIcon}>
+                {t('projects.newProject')}
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
