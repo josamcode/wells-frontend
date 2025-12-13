@@ -5,6 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { projectsAPI } from '../../api/projects';
 import { reportsAPI } from '../../api/reports';
+import { paymentsAPI } from '../../api/payments';
 import { toast } from 'react-toastify';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -34,6 +35,9 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClipboardDocumentCheckIcon,
+  BanknotesIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
 } from '@heroicons/react/24/outline';
 
 const InfoItem = memo(({ icon: Icon, label, value, className = '' }) => (
@@ -58,6 +62,8 @@ const ProjectDetail = memo(() => {
   const { hasRole, user } = useAuth();
   const [project, setProject] = useState(null);
   const [reports, setReports] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [paymentSummary, setPaymentSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -74,18 +80,33 @@ const ProjectDetail = memo(() => {
     evaluationNotes: '',
   });
   const [evaluationLoading, setEvaluationLoading] = useState(false);
+  const [paymentModal, setPaymentModal] = useState(false);
+  const [paymentData, setPaymentData] = useState({
+    amount: '',
+    currency: 'USD',
+    recipientId: '',
+    recipientType: 'contractor',
+    description: '',
+  });
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [pendingPayments, setPendingPayments] = useState([]);
+  const [rejectPaymentModal, setRejectPaymentModal] = useState(false);
+  const [rejectingPaymentId, setRejectingPaymentId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   const fetchProject = useCallback(async () => {
     try {
       const response = await projectsAPI.getById(id);
-      setProject(response.data.data);
+      const projectData = response.data.data;
+      setProject(projectData);
     } catch (error) {
       toast.error(t('users.failedToFetchProject'));
       navigate('/projects');
     } finally {
       setLoading(false);
     }
-  }, [id, navigate]);
+  }, [id, navigate, t]);
 
   const fetchReports = useCallback(async () => {
     try {
@@ -97,10 +118,107 @@ const ProjectDetail = memo(() => {
     }
   }, [id]);
 
+  const fetchPayments = useCallback(async () => {
+    const userIsSuperAdmin = hasRole('super_admin');
+    const userCanViewPayments = userIsSuperAdmin || hasRole('contractor', 'project_manager');
+    if (!userCanViewPayments) return;
+    try {
+      const [paymentsResponse, summaryResponse] = await Promise.all([
+        paymentsAPI.getProjectPayments(id).catch(() => ({ data: { data: [] } })),
+        paymentsAPI.getPaymentSummary(id).catch(() => ({ data: { data: null } })),
+      ]);
+      setPayments(paymentsResponse.data.data || []);
+      setPaymentSummary(summaryResponse.data.data);
+    } catch (error) {
+      // Silent fail
+    }
+  }, [id, hasRole, t]);
+
+  const fetchPendingPayments = useCallback(async () => {
+    if (!hasRole('contractor', 'project_manager')) return;
+    try {
+      const response = await paymentsAPI.getPending();
+      setPendingPayments(response.data.data || []);
+    } catch (error) {
+      // Silent fail
+    }
+  }, [hasRole]);
+
+  const handleCreatePayment = useCallback(async () => {
+    if (!paymentData.amount || !paymentData.recipientId) {
+      toast.error(t('payments.fillAllFields'));
+      return;
+    }
+    setPaymentLoading(true);
+    try {
+      await paymentsAPI.create({
+        projectId: id,
+        amount: parseFloat(paymentData.amount),
+        currency: paymentData.currency,
+        recipientId: paymentData.recipientId,
+        recipientType: paymentData.recipientType,
+        description: paymentData.description,
+      });
+      toast.success(t('payments.paymentRequestCreated'));
+      setPaymentModal(false);
+      setPaymentData({
+        amount: '',
+        currency: 'USD',
+        recipientId: '',
+        recipientType: 'contractor',
+        description: '',
+      });
+      fetchPayments();
+    } catch (error) {
+      toast.error(t('payments.failedToCreatePayment'));
+    } finally {
+      setPaymentLoading(false);
+    }
+  }, [id, paymentData, fetchPayments, t]);
+
+  const handleApprovePayment = useCallback(async (paymentId) => {
+    try {
+      await paymentsAPI.approve(paymentId);
+      toast.success(t('payments.paymentApproved'));
+      fetchPayments();
+      fetchPendingPayments();
+    } catch (error) {
+      toast.error(t('payments.failedToApprovePayment'));
+    }
+  }, [fetchPayments, fetchPendingPayments, t]);
+
+  const handleRejectPayment = useCallback(async (paymentId, rejectionReason) => {
+    setRejectLoading(true);
+    try {
+      await paymentsAPI.reject(paymentId, rejectionReason);
+      toast.success(t('payments.paymentRejected'));
+      fetchPayments();
+      fetchPendingPayments();
+      setRejectPaymentModal(false);
+      setRejectingPaymentId(null);
+      setRejectionReason('');
+    } catch (error) {
+      toast.error(t('payments.failedToRejectPayment'));
+    } finally {
+      setRejectLoading(false);
+    }
+  }, [fetchPayments, fetchPendingPayments, t]);
+
+  const openRejectModal = useCallback((paymentId) => {
+    setRejectingPaymentId(paymentId);
+    setRejectionReason('');
+    setRejectPaymentModal(true);
+  }, []);
+
   useEffect(() => {
     fetchProject();
     fetchReports();
   }, [fetchProject, fetchReports]);
+
+  useEffect(() => {
+    fetchPayments();
+    fetchPendingPayments();
+  }, [fetchPayments, fetchPendingPayments]);
 
   const handleDelete = useCallback(async () => {
     setDeleteLoading(true);
@@ -248,6 +366,9 @@ const ProjectDetail = memo(() => {
               </Button>
               <Button variant="primary" size="sm" icon={CheckCircleIcon} onClick={() => setEvaluationModal(true)}>
                 {t('projects.evaluateProject')}
+              </Button>
+              <Button variant="primary" size="sm" icon={BanknotesIcon} onClick={() => setPaymentModal(true)}>
+                {t('payments.createPayment')}
               </Button>
             </>
           )}
@@ -689,6 +810,182 @@ const ProjectDetail = memo(() => {
             ) : null;
           })()}
 
+          {/* Payments - Only for Admins, Contractors, and Project Managers (not clients) */}
+          {(isSuperAdmin || hasRole('contractor', 'project_manager')) && (
+            <Card
+              title={t('payments.title') || 'Payments'}
+              actions={
+                canReview && (
+                  <Button size="sm" icon={BanknotesIcon} onClick={() => setPaymentModal(true)}>
+                    {t('payments.createPayment')}
+                  </Button>
+                )
+              }
+            >
+              {paymentSummary ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-secondary-50 rounded-xl">
+                      <p className="text-xs text-secondary-500 mb-1">{t('payments.budget') || 'Budget'}</p>
+                      <p className="text-xl font-bold text-secondary-900">
+                        {formatCurrency(paymentSummary.budget, paymentSummary.currency)}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-primary-50 rounded-xl">
+                      <p className="text-xs text-secondary-500 mb-1">{t('payments.totalSpent') || 'Total Spent'}</p>
+                      <p className="text-xl font-bold text-primary-600">
+                        {formatCurrency(paymentSummary.totalSpent, paymentSummary.currency)}
+                      </p>
+                    </div>
+                    <div className={`p-4 rounded-xl ${paymentSummary.remaining >= 0 ? 'bg-success-50' : 'bg-danger-50'}`}>
+                      <p className="text-xs text-secondary-500 mb-1">{t('payments.remaining') || 'Remaining'}</p>
+                      <p className={`text-xl font-bold ${paymentSummary.remaining >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                        {formatCurrency(paymentSummary.remaining, paymentSummary.currency)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-secondary-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-medium text-secondary-500">
+                        {t('payments.spentPercentage') || 'Spent Percentage'}
+                      </p>
+                      <p className="text-sm font-semibold text-secondary-900">
+                        {paymentSummary.spentPercentage.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="w-full bg-secondary-100 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${paymentSummary.spentPercentage > 100
+                          ? 'bg-danger-500'
+                          : paymentSummary.spentPercentage > 80
+                            ? 'bg-warning-500'
+                            : 'bg-primary-500'
+                          }`}
+                        style={{ width: `${Math.min(paymentSummary.spentPercentage, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state py-8">
+                  <BanknotesIcon className="w-12 h-12 text-secondary-300 mx-auto mb-3" />
+                  <p className="text-secondary-500 text-sm">{t('payments.noPayments') || 'No payments yet'}</p>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Payment History - Only for Admins, Contractors, and Project Managers */}
+          {(isSuperAdmin || hasRole('contractor', 'project_manager')) && payments.length > 0 && (
+            <Card title={t('payments.paymentHistory') || 'Payment History'}>
+              <div className="space-y-3">
+                {payments.slice(0, 10).map((payment) => (
+                  <div
+                    key={payment._id}
+                    className="p-4 border border-secondary-100 rounded-xl hover:bg-secondary-50 transition-all"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-sm font-semibold text-secondary-900">
+                            {formatCurrency(payment.amount, payment.currency)}
+                          </p>
+                          <Badge
+                            status={
+                              payment.status === 'approved'
+                                ? 'approved'
+                                : payment.status === 'rejected'
+                                  ? 'rejected'
+                                  : 'submitted'
+                            }
+                            size="sm"
+                          >
+                            {t(`payments.statuses.${payment.status}`) || payment.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-secondary-500">
+                          {t('payments.to')} {payment.recipient?.fullName} ({t(`payments.${payment.recipientType}`)})
+                        </p>
+                        {payment.description && (
+                          <p className="text-xs text-secondary-600 mt-1">{payment.description}</p>
+                        )}
+                        <p className="text-xs text-secondary-400 mt-1">
+                          {t('payments.requestedBy')} {payment.requestedBy?.fullName} • {formatDate(payment.createdAt)}
+                        </p>
+                        {payment.status === 'approved' && payment.approvedAt && (
+                          <p className="text-xs text-success-600 mt-1">
+                            {t('payments.approvedAt')} {formatDate(payment.approvedAt)}
+                          </p>
+                        )}
+                        {payment.status === 'rejected' && payment.rejectionReason && (
+                          <div className="mt-2 p-2 bg-danger-50 rounded-lg">
+                            <p className="text-xs text-danger-700">
+                              {t('payments.rejectionReason')}: {payment.rejectionReason}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {payments.length > 10 && (
+                  <p className="text-center text-sm text-secondary-500 py-2">
+                    {t('common.viewAll')} ({payments.length} {t('payments.payments')})
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Pending Payment Requests - For Contractors and Project Managers */}
+          {hasRole('contractor', 'project_manager') && pendingPayments.length > 0 && (
+            <Card title={t('payments.pendingPayments') || 'Pending Payment Requests'}>
+              <div className="space-y-3">
+                {pendingPayments
+                  .filter((p) => p.project?._id === id)
+                  .map((payment) => (
+                    <div
+                      key={payment._id}
+                      className="p-4 border border-warning-200 bg-warning-50 rounded-xl"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-secondary-900 mb-1">
+                            {formatCurrency(payment.amount, payment.currency)}
+                          </p>
+                          <p className="text-xs text-secondary-600">
+                            {t('payments.from')} {payment.requestedBy?.fullName}
+                          </p>
+                          {payment.description && (
+                            <p className="text-xs text-secondary-700 mt-1">{payment.description}</p>
+                          )}
+                          <p className="text-xs text-secondary-400 mt-1">{formatDate(payment.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-3 border-t border-warning-200">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleApprovePayment(payment._id)}
+                          className="flex-1"
+                        >
+                          {t('payments.approve')}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline-danger"
+                          onClick={() => openRejectModal(payment._id)}
+                          className="flex-1"
+                        >
+                          {t('payments.reject')}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </Card>
+          )}
+
           {/* Reports */}
           <Card
             title={t('reports.title')}
@@ -1087,6 +1384,195 @@ const ProjectDetail = memo(() => {
           </Button>
           <Button onClick={handleEvaluation} loading={evaluationLoading}>
             {t('projects.submitEvaluation') || 'Submit Evaluation'}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Payment Request Modal */}
+      {canReview && project && (
+        <Modal
+          isOpen={paymentModal}
+          onClose={() => {
+            setPaymentModal(false);
+            setPaymentData({
+              amount: '',
+              currency: project.budget?.currency || 'USD',
+              recipientId: '',
+              recipientType: 'contractor',
+              description: '',
+            });
+          }}
+          title={t('payments.createPayment') || 'Create Payment Request'}
+          size="md"
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label={t('payments.amount') || 'Amount'}
+                type="number"
+                name="amount"
+                value={paymentData.amount}
+                onChange={(e) =>
+                  setPaymentData((prev) => ({
+                    ...prev,
+                    amount: e.target.value,
+                  }))
+                }
+                min="0"
+                step="0.01"
+                required
+                icon={CurrencyDollarIcon}
+              />
+              <Select
+                label={t('payments.currency') || 'Currency'}
+                name="currency"
+                value={paymentData.currency}
+                onChange={(e) =>
+                  setPaymentData((prev) => ({
+                    ...prev,
+                    currency: e.target.value,
+                  }))
+                }
+                options={[
+                  { value: 'USD', label: 'USD' },
+                  { value: 'EUR', label: 'EUR' },
+                  { value: 'SAR', label: 'SAR' },
+                ]}
+                required
+              />
+            </div>
+            <Select
+              label={t('payments.recipientType') || 'Recipient Type'}
+              name="recipientType"
+              value={paymentData.recipientType}
+              onChange={(e) =>
+                setPaymentData((prev) => ({
+                  ...prev,
+                  recipientType: e.target.value,
+                  recipientId: '', // Reset recipient when type changes
+                }))
+              }
+              options={[
+                { value: 'contractor', label: t('projects.contractor') },
+                { value: 'project_manager', label: t('projects.projectManager') },
+              ]}
+              required
+            />
+            <Select
+              label={t('payments.recipient') || 'Recipient'}
+              name="recipientId"
+              value={paymentData.recipientId}
+              onChange={(e) =>
+                setPaymentData((prev) => ({
+                  ...prev,
+                  recipientId: e.target.value,
+                }))
+              }
+              options={[
+                ...(paymentData.recipientType === 'contractor' && project.contractor
+                  ? [
+                    {
+                      value: project.contractor._id,
+                      label: `${project.contractor.fullName} (${project.contractor.email})`,
+                    },
+                  ]
+                  : []),
+                ...(paymentData.recipientType === 'project_manager' && project.projectManager
+                  ? [
+                    {
+                      value: project.projectManager._id,
+                      label: `${project.projectManager.fullName} (${project.projectManager.email})`,
+                    },
+                  ]
+                  : []),
+              ]}
+              required
+            />
+            <Textarea
+              label={`${t('payments.description') || 'Description'} (${t('common.optional')})`}
+              value={paymentData.description}
+              onChange={(e) =>
+                setPaymentData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+              rows={3}
+              placeholder={t('payments.descriptionPlaceholder') || 'Add payment description...'}
+            />
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setPaymentModal(false);
+                setPaymentData({
+                  amount: '',
+                  currency: project.budget?.currency || 'USD',
+                  recipientId: '',
+                  recipientType: 'contractor',
+                  description: '',
+                });
+              }}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleCreatePayment} loading={paymentLoading}>
+              {t('payments.createPayment')}
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Reject Payment Modal */}
+      <Modal
+        isOpen={rejectPaymentModal}
+        onClose={() => {
+          setRejectPaymentModal(false);
+          setRejectingPaymentId(null);
+          setRejectionReason('');
+        }}
+        title={t('payments.rejectPayment') || 'Reject Payment Request'}
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-secondary-600">
+            {t('payments.rejectPaymentMessage') || 'Please provide a reason for rejecting this payment request.'}
+          </p>
+          <Textarea
+            label={t('payments.rejectionReason') || 'Rejection Reason'}
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            rows={4}
+            placeholder={t('payments.rejectionReasonPlaceholder') || 'Enter the reason for rejection...'}
+            required
+          />
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setRejectPaymentModal(false);
+              setRejectingPaymentId(null);
+              setRejectionReason('');
+            }}
+            disabled={rejectLoading}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              if (rejectionReason.trim()) {
+                handleRejectPayment(rejectingPaymentId, rejectionReason);
+              } else {
+                toast.error(t('payments.rejectionReasonRequired') || 'Rejection reason is required');
+              }
+            }}
+            loading={rejectLoading}
+            disabled={!rejectionReason.trim()}
+          >
+            {t('payments.reject')}
           </Button>
         </div>
       </Modal>
