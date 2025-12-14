@@ -23,6 +23,7 @@ const ReportDetail = lazy(() => import('./pages/Reports/ReportDetail'));
 const ReportForm = lazy(() => import('./pages/Reports/ReportForm'));
 const UsersList = lazy(() => import('./pages/Users/UsersList'));
 const UserForm = lazy(() => import('./pages/Users/UserForm'));
+const UserDetail = lazy(() => import('./pages/Users/UserDetail'));
 const Notifications = lazy(() => import('./pages/Notifications/Notifications'));
 const Messages = lazy(() => import('./pages/Messages/Messages'));
 const Settings = lazy(() => import('./pages/Settings/Settings'));
@@ -258,6 +259,16 @@ function App() {
             <ProtectedRoute excludeRoles={['client']}>
               <Suspense fallback={<PageLoader />}>
                 <UserForm />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="users/:id"
+          element={
+            <ProtectedRoute roles={['super_admin']}>
+              <Suspense fallback={<PageLoader />}>
+                <UserDetail />
               </Suspense>
             </ProtectedRoute>
           }

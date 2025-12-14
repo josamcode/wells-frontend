@@ -8,7 +8,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import { COUNTRIES } from '../../utils/constants';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, PhotoIcon, DocumentIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 const UserForm = () => {
   const { t } = useTranslation();
@@ -19,6 +19,10 @@ const UserForm = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [setPassword, setSetPassword] = useState(false);
+  const [userMedia, setUserMedia] = useState([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [newMediaFile, setNewMediaFile] = useState(null);
+  const [newMediaName, setNewMediaName] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -33,6 +37,9 @@ const UserForm = () => {
   useEffect(() => {
     if (isEditMode) {
       fetchUser();
+    } else {
+      // Reset media when creating new user
+      setUserMedia([]);
     }
   }, [id]);
 
@@ -104,6 +111,63 @@ const UserForm = () => {
     value: country,
     label: country,
   }));
+
+  const isContractorOrPM = formData.role === 'contractor' || formData.role === 'project_manager';
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewMediaFile(file);
+    }
+  };
+
+  const handleUploadMedia = async () => {
+    if (!newMediaFile || !newMediaName.trim()) {
+      toast.error(t('users.mediaNameAndFileRequired') || 'Please select a file and enter a name');
+      return;
+    }
+
+    if (!isEditMode || !id) {
+      toast.error(t('users.saveUserFirst') || 'Please save the user first before uploading media');
+      return;
+    }
+
+    setUploadingMedia(true);
+    try {
+      const response = await usersAPI.uploadMedia(id, newMediaFile, newMediaName.trim());
+      setUserMedia(response.data.data.user.media || []);
+      setNewMediaFile(null);
+      setNewMediaName('');
+      document.getElementById('mediaFileInput')?.value && (document.getElementById('mediaFileInput').value = '');
+      toast.success(t('users.mediaUploaded') || 'Media uploaded successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || t('users.failedToUploadMedia') || 'Failed to upload media');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleDeleteMedia = async (mediaId) => {
+    if (!window.confirm(t('users.confirmDeleteMedia') || 'Are you sure you want to delete this media?')) {
+      return;
+    }
+
+    try {
+      const response = await usersAPI.deleteMedia(id, mediaId);
+      const updatedUser = response.data.data;
+      setUserMedia(updatedUser.media || []);
+      toast.success(t('users.mediaDeleted') || 'Media deleted successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || t('users.failedToDeleteMedia') || 'Failed to delete media');
+    }
+  };
+
+  const getFileIcon = (fileType) => {
+    if (fileType?.startsWith('image/')) {
+      return PhotoIcon;
+    }
+    return DocumentIcon;
+  };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -288,6 +352,128 @@ const UserForm = () => {
               <strong>{t('common.note')}:</strong> {t('users.tempPasswordNote')}
             </p>
           </div>
+        )}
+
+        {/* Media Upload Section - Only for Contractors and Project Managers */}
+        {isContractorOrPM && (
+          <Card title={t('users.accountMedia') || 'Account Media'}>
+            <div className="space-y-4">
+              {/* Upload New Media */}
+              {isEditMode && id && (
+                <div className="p-4 bg-secondary-50 rounded-xl border-2 border-dashed border-secondary-300">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-2">
+                        {t('users.mediaName') || 'Media Name'}
+                      </label>
+                      <Input
+                        value={newMediaName}
+                        onChange={(e) => setNewMediaName(e.target.value)}
+                        placeholder={t('users.mediaNamePlaceholder') || 'e.g., ID, Tax ID, Image, License...'}
+                        className="mb-3"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-2">
+                        {t('users.selectFile') || 'Select File'}
+                      </label>
+                      <input
+                        id="mediaFileInput"
+                        type="file"
+                        onChange={handleFileSelect}
+                        accept="image/*,application/pdf,.doc,.docx"
+                        className="block w-full text-sm text-secondary-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                      />
+                    </div>
+                    {newMediaFile && (
+                      <div className="flex items-center gap-2 text-sm text-secondary-600">
+                        <DocumentIcon className="w-5 h-5" />
+                        <span>{newMediaFile.name}</span>
+                        <span className="text-secondary-400">
+                          ({(newMediaFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      onClick={handleUploadMedia}
+                      loading={uploadingMedia}
+                      disabled={!newMediaFile || !newMediaName.trim()}
+                      size="sm"
+                      icon={PlusIcon}
+                    >
+                      {t('users.uploadMedia') || 'Upload Media'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Existing Media */}
+              {userMedia.length > 0 ? (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-secondary-900 mb-3">
+                    {t('users.uploadedMedia') || 'Uploaded Media'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {userMedia.map((media) => {
+                      const Icon = getFileIcon(media.fileType);
+                      return (
+                        <div
+                          key={media._id}
+                          className="flex items-center gap-3 p-3 bg-white border border-secondary-200 rounded-xl hover:border-primary-300 transition-colors"
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+                            <Icon className="w-5 h-5 text-primary-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-secondary-900 truncate">{media.name}</p>
+                            <p className="text-xs text-secondary-500">
+                              {new Date(media.uploadedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          {isEditMode && id && (
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={media.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                title={t('common.view')}
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </a>
+                              <button
+                                onClick={() => handleDeleteMedia(media._id)}
+                                className="p-2 text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
+                                title={t('common.delete')}
+                              >
+                                <XMarkIcon className="w-5 h-5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : isEditMode && id ? (
+                <p className="text-sm text-secondary-500 text-center py-4">
+                  {t('users.noMediaUploaded') || 'No media uploaded yet'}
+                </p>
+              ) : null}
+
+              {!isEditMode && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    {t('users.mediaUploadAfterSave') || 'You can upload media after creating the user'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
         )}
 
         <div className="flex justify-end gap-3">

@@ -220,7 +220,7 @@ const ReportDetail = memo(() => {
               />
               {report.progressPercentage !== undefined && (
                 <div className="md:col-span-2">
-                  <p className="text-xs font-medium text-secondary-500 uppercase tracking-wider mb-2">Progress</p>
+                  <p className="text-xs font-medium text-secondary-500 uppercase tracking-wider mb-2">{t('common.progress')}</p>
                   <div className="flex items-center gap-4">
                     <div className="flex-1 h-3 bg-secondary-100 rounded-full overflow-hidden">
                       <div
@@ -273,17 +273,17 @@ const ReportDetail = memo(() => {
 
           {/* Laborers & Equipment */}
           {(report.laborers?.count || report.equipment?.length > 0) && (
-            <Card title="Laborers & Equipment">
+            <Card title={t('reports.laborersEquipment')}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {report.laborers?.count && (
                   <div className="p-4 bg-secondary-50 rounded-xl">
-                    <p className="text-xs font-medium text-secondary-500 uppercase tracking-wider">Total Laborers</p>
+                    <p className="text-xs font-medium text-secondary-500 uppercase tracking-wider">{t('reports.totalLaborers')}</p>
                     <p className="text-2xl font-bold text-secondary-900 mt-1">{report.laborers.count}</p>
                   </div>
                 )}
                 {report.equipment?.length > 0 && (
                   <div className="md:col-span-2">
-                    <h4 className="text-sm font-semibold text-secondary-900 mb-3">Equipment Used</h4>
+                    <h4 className="text-sm font-semibold text-secondary-900 mb-3">{t('reports.equipmentUsed')}</h4>
                     <div className="space-y-2">
                       {report.equipment.map((item, index) => (
                         <div key={index} className="flex items-center justify-between p-3 bg-secondary-50 rounded-xl">
@@ -377,7 +377,7 @@ const ReportDetail = memo(() => {
 
           {/* Google Drive Link */}
           {report.googleDriveUrl && (
-            <Card title="Documents">
+            <Card title={t('reports.documents')}>
               <a
                 href={report.googleDriveUrl}
                 target="_blank"

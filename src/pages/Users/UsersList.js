@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usersAPI } from '../../api/users';
 import { toast } from 'react-toastify';
@@ -21,6 +21,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const UsersList = memo(() => {
   const { t } = useTranslation();
   const { hasRole } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
@@ -135,8 +136,17 @@ const UsersList = memo(() => {
             {getInitials(row.fullName)}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-secondary-900 truncate">{row.fullName}</p>
-            <p className="text-xs text-secondary-500 truncate">{row.email}</p>
+            {hasRole('super_admin') ? (
+              <Link to={`/users/${row._id}`} className="block hover:text-primary-600 transition-colors">
+                <p className="font-semibold text-secondary-900 truncate hover:text-primary-600">{row.fullName}</p>
+                <p className="text-xs text-secondary-500 truncate">{row.email}</p>
+              </Link>
+            ) : (
+              <>
+                <p className="font-semibold text-secondary-900 truncate">{row.fullName}</p>
+                <p className="text-xs text-secondary-500 truncate">{row.email}</p>
+              </>
+            )}
           </div>
         </div>
       ),
@@ -158,12 +168,12 @@ const UsersList = memo(() => {
       header: t('users.isActive'),
       render: (row) => (
         <Badge status={row.isActive ? 'active' : 'inactive'} dot>
-          {row.isActive ? 'Active' : 'Inactive'}
+          {row.isActive ? t('common.active') : t('common.inactive')}
         </Badge>
       ),
     },
     {
-      header: 'Last Login',
+      header: t('users.lastLogin'),
       render: (row) => (
         <span className="text-secondary-500 text-sm">
           {formatDate(row.lastLogin)}
@@ -264,24 +274,24 @@ const UsersList = memo(() => {
               value={filters.search}
               onChange={handleSearchChange}
               onClear={clearSearch}
-              placeholder="Search by name or email..."
+              placeholder={t('users.searchPlaceholder')}
               className="flex-1 max-w-md"
             />
             <Select
               value={filters.role}
               onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
               options={roleOptions}
-              placeholder="All Roles"
+              placeholder={t('users.allRoles')}
               className="w-full sm:w-40"
             />
             <Select
               value={filters.isActive}
               onChange={(e) => setFilters(prev => ({ ...prev, isActive: e.target.value }))}
               options={[
-                { value: 'true', label: 'Active' },
-                { value: 'false', label: 'Inactive' },
+                { value: 'true', label: t('common.active') },
+                { value: 'false', label: t('common.inactive') },
               ]}
-              placeholder="All Status"
+              placeholder={t('users.allStatuses')}
               className="w-full sm:w-36"
             />
           </div>
@@ -295,6 +305,7 @@ const UsersList = memo(() => {
               data={users}
               loading={loading}
               emptyMessage={t('users.noUsers')}
+              onRowClick={hasRole('super_admin') ? (row) => navigate(`/users/${row._id}`) : undefined}
             />
           ) : (
             <CardView
@@ -302,6 +313,7 @@ const UsersList = memo(() => {
               columns={columns}
               loading={loading}
               emptyMessage={t('users.noUsers')}
+              onItemClick={hasRole('super_admin') ? (item) => navigate(`/users/${item._id}`) : undefined}
             />
           )}
         </div>

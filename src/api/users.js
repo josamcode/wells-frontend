@@ -10,5 +10,14 @@ export const usersAPI = {
   delete: (id) => axios.delete(`/users/${id}`),
   toggleStatus: (id) => axios.patch(`/users/${id}/toggle-status`),
   changePassword: (id, password) => axios.patch(`/users/${id}/change-password`, { password }),
+  uploadMedia: (userId, file, name) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    return axios.post(`/users/${userId}/media`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  deleteMedia: (userId, mediaId) => axios.delete(`/users/${userId}/media/${mediaId}`),
 };
 

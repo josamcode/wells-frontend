@@ -407,7 +407,7 @@ const ProjectDetail = memo(() => {
               {showSensitiveInfo && project.location?.address && (
                 <InfoItem
                   icon={MapPinIcon}
-                  label={t('projects.location') || 'Location Address'}
+                  label={t('projects.address')}
                   value={project.location.address}
                 />
               )}

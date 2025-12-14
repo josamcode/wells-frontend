@@ -264,7 +264,7 @@ const ReportForm = () => {
               onChange={handleChange}
             />
             <Input
-              label="Weather Condition"
+              label={t('reports.weatherCondition')}
               name="weatherCondition"
               value={formData.weatherCondition}
               onChange={handleChange}

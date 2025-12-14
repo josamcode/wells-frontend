@@ -178,11 +178,20 @@ const ProjectForm = () => {
         toast.success(t('projects.projectUpdated'));
       } else {
         await projectsAPI.create(payload);
-        toast.success(t('projects.projectCreated'));
+        toast.success(t('users.projectCreated'));
       }
       navigate('/projects');
     } catch (error) {
-      toast.error(error.response?.data?.message || t('projects.failedToSaveProject'));
+      // Extract detailed error messages
+      const errorData = error.response?.data;
+      let errorMessage = errorData?.message || t('projects.failedToSaveProject');
+
+      // If there are specific validation errors, show the first one
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        errorMessage = errorData.errors[0].msg || errorMessage;
+      }
+
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -290,13 +299,13 @@ const ProjectForm = () => {
               onChange={handleChange}
             />
             <Input
-              label="Address"
+              label={t('projects.address')}
               name="locationAddress"
               value={formData.locationAddress}
               onChange={handleChange}
             />
             <Input
-              label="Latitude"
+              label={t('projects.latitude')}
               name="locationLatitude"
               type="number"
               step="any"
@@ -304,7 +313,7 @@ const ProjectForm = () => {
               onChange={handleChange}
             />
             <Input
-              label="Longitude"
+              label={t('projects.longitude')}
               name="locationLongitude"
               type="number"
               step="any"
