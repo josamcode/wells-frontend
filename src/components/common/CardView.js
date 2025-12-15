@@ -115,14 +115,9 @@ const ItemCard = memo(({ item, columns, onItemClick, type }) => {
             w-12 h-12 rounded-xl bg-gradient-to-br ${getGradient()} 
             flex items-center justify-center flex-shrink-0
             shadow-soft group-hover:shadow-lg transition-shadow
-          `}> */}
-          <div className={`
-            w-12 h-12 rounded-xl bg-gradient-to-br ${getGradient()} 
-            flex items-center justify-center flex-shrink-0
-            shadow-soft group-hover:shadow-lg transition-shadow
           `}>
             <CardIcon className="w-6 h-6 text-white" />
-          </div>
+          </div> */}
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold text-secondary-900 line-clamp-2 leading-tight">
               {title !== null && title !== undefined ? title : (language === 'ar' && item.projectNameAr ? item.projectNameAr : item.projectName) || item.title || item.fullName || t('common.untitled')}
