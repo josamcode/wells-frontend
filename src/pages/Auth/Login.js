@@ -148,6 +148,19 @@ const Login = memo(() => {
             </Button>
           </form>
 
+          {/* Client Login Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-secondary-600">
+              {t('auth.clientLoginPrompt') || 'Are you a client?'}{' '}
+              <Link
+                to="/client-login"
+                className="font-medium text-primary-600 hover:text-primary-700 transition-colors"
+              >
+                {t('auth.clientLogin') || 'Login as Client'}
+              </Link>
+            </p>
+          </div>
+
           {/* Demo Credentials */}
           <div className="mt-8 p-4 bg-primary-50 rounded-xl border border-primary-100">
             <p className="text-xs font-medium text-primary-800 text-center">

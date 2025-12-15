@@ -44,6 +44,7 @@
     "continueToLogin": "Continue to Login",
     "passwordResetSuccessMessage": "Your password has been updated. You can now login with your new password",
     "clientLogin": "Client Login",
+    "clientLoginPrompt": "Are you a client?",
     "clientLoginDescription": "Enter your phone number to access your projects",
     "phone": "Phone Number",
     "phonePlaceholder": "+1234567890",

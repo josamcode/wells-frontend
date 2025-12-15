@@ -44,6 +44,7 @@
     "continueToLogin": "المتابعة لتسجيل الدخول",
     "passwordResetSuccessMessage": "تم تحديث كلمة المرور الخاصة بك. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة",
     "clientLogin": "تسجيل دخول العميل",
+    "clientLoginPrompt": "هل أنت عميل؟",
     "clientLoginDescription": "أدخل رقم هاتفك للوصول إلى مشاريعك",
     "phone": "رقم الهاتف",
     "phonePlaceholder": "+1234567890",
