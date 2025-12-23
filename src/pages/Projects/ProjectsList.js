@@ -13,7 +13,8 @@ import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
 import { SearchInput } from '../../components/common/Input';
 import { formatDate } from '../../utils/helpers';
-import { PlusIcon, FolderIcon } from '@heroicons/react/24/outline';
+import { PROJECT_TYPES } from '../../utils/constants';
+import { PlusIcon, FolderIcon, BuildingLibraryIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
 const ProjectsList = memo(() => {
   const { t } = useTranslation();
@@ -64,6 +65,25 @@ const ProjectsList = memo(() => {
     setSearchValue('');
   }, []);
 
+  // Get project type icon
+  const getProjectTypeIcon = (projectType) => {
+    switch (projectType) {
+      case PROJECT_TYPES.WELL:
+        return FolderIcon;
+      case PROJECT_TYPES.MOSQUE:
+        return BuildingLibraryIcon;
+      case PROJECT_TYPES.OTHER:
+        return WrenchScrewdriverIcon;
+      default:
+        return FolderIcon;
+    }
+  };
+
+  // Get project type label
+  const getProjectTypeLabel = (projectType) => {
+    return t(`projects.types.${projectType}`) || projectType;
+  };
+
   const columns = useMemo(() => [
     {
       header: t('projects.projectNumber'),
@@ -77,15 +97,34 @@ const ProjectsList = memo(() => {
     {
       header: t('projects.projectName'),
       accessor: 'projectName',
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
-            <FolderIcon className="w-5 h-5 text-primary-600" />
+      render: (row) => {
+        const ProjectIcon = getProjectTypeIcon(row.projectType);
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+              <ProjectIcon className="w-5 h-5 text-primary-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium text-secondary-900 block">
+                {language === 'ar' && row.projectNameAr ? row.projectNameAr : row.projectName}
+              </span>
+              {row.projectType && (
+                <span className="text-xs text-secondary-500 mt-0.5 block">
+                  {getProjectTypeLabel(row.projectType)}
+                </span>
+              )}
+            </div>
           </div>
-          <span className="font-medium text-secondary-900">
-            {language === 'ar' && row.projectNameAr ? row.projectNameAr : row.projectName}
-          </span>
-        </div>
+        );
+      }
+    },
+    {
+      header: t('projects.projectType') || 'Type',
+      accessor: 'projectType',
+      render: (row) => (
+        <Badge variant="secondary" size="sm">
+          {getProjectTypeLabel(row.projectType || PROJECT_TYPES.WELL)}
+        </Badge>
       )
     },
     {

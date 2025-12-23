@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CardSkeleton } from './Loading';
 import Badge from './Badge';
-import { FolderIcon, DocumentTextIcon, UserIcon, CalendarIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { FolderIcon, DocumentTextIcon, UserIcon, CalendarIcon, MapPinIcon, BuildingLibraryIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
+import { PROJECT_TYPES } from '../../utils/constants';
 
 const CardView = memo(({
   data,
@@ -122,9 +123,16 @@ const ItemCard = memo(({ item, columns, onItemClick, type }) => {
             <h3 className="text-base font-semibold text-secondary-900 line-clamp-2 leading-tight">
               {title !== null && title !== undefined ? title : (language === 'ar' && item.projectNameAr ? item.projectNameAr : item.projectName) || item.title || item.fullName || t('common.untitled')}
             </h3>
-            <p className="text-sm text-secondary-500 mt-1 truncate">
-              {subtitle !== null && subtitle !== undefined ? subtitle : item.projectNumber || item.reportNumber || item.email || ''}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm text-secondary-500 truncate">
+                {subtitle !== null && subtitle !== undefined ? subtitle : item.projectNumber || item.reportNumber || item.email || ''}
+              </p>
+              {item.projectType && (
+                <Badge variant="secondary" size="sm">
+                  {t(`projects.types.${item.projectType}`) || item.projectType}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 

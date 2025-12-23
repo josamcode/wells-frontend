@@ -14,5 +14,30 @@ export const projectsAPI = {
     axios.post(`/projects/${id}/review`, { reviewStatus, reviewNotes }),
   evaluate: (id, evaluationData) =>
     axios.post(`/projects/${id}/evaluate`, evaluationData),
+  uploadMedia: (projectId, file, name) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    return axios.post(`/projects/${projectId}/media`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  uploadMultipleMedia: (projectId, files, names) => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    if (Array.isArray(names)) {
+      names.forEach((name, index) => {
+        formData.append(`names[${index}]`, name);
+      });
+    } else if (names) {
+      formData.append('names', names);
+    }
+    return axios.post(`/projects/${projectId}/media/multiple`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  deleteMedia: (projectId, mediaId) => axios.delete(`/projects/${projectId}/media/${mediaId}`),
 };
 

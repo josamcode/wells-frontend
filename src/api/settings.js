@@ -9,6 +9,7 @@ export const settingsAPI = {
   initializeGoogleDrive: (type, credentials) =>
     axios.post('/settings/google-drive/initialize', { type, credentials }),
   getGoogleDriveStatus: () => axios.get('/settings/google-drive/status'),
+  getGoogleDriveAuthUrl: () => axios.get('/settings/google-drive/auth-url'),
   updateTheme: (theme) => axios.post('/settings/theme', theme),
 };
 

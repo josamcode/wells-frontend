@@ -10,7 +10,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Textarea from '../../components/common/Textarea';
-import { COUNTRIES, PROJECT_STATUS } from '../../utils/constants';
+import { COUNTRIES, PROJECT_STATUS, PROJECT_TYPES } from '../../utils/constants';
 
 const ProjectForm = () => {
   const { t } = useTranslation();
@@ -25,6 +25,7 @@ const ProjectForm = () => {
   const [projectCreatedBy, setProjectCreatedBy] = useState(null);
   const [formData, setFormData] = useState({
     projectNumber: '',
+    projectType: 'well',
     projectName: '',
     description: '',
     country: '',
@@ -41,11 +42,22 @@ const ProjectForm = () => {
     locationLatitude: '',
     locationLongitude: '',
     locationAddress: '',
+    // Well details
     wellDepth: '',
     wellDiameter: '',
     wellCapacity: '',
     wellWaterQuality: '',
     wellPumpType: '',
+    // Mosque details
+    mosqueArea: '',
+    mosqueCapacity: '',
+    mosqueMinarets: '',
+    mosqueDomes: '',
+    mosquePrayerHalls: '',
+    mosqueAblutionFacilities: '',
+    mosqueParkingSpaces: '',
+    // Other details (stored as JSON string, parsed when needed)
+    otherDetails: '',
     estimatedFamilies: '',
     estimatedPeople: '',
     clientName: '',
@@ -82,6 +94,7 @@ const ProjectForm = () => {
       setProjectCreatedBy(project.createdBy?._id || project.createdBy);
       setFormData({
         projectNumber: project.projectNumber || '',
+        projectType: project.projectType || 'well',
         projectName: project.projectName || '',
         description: project.description || '',
         country: project.country || '',
@@ -98,11 +111,22 @@ const ProjectForm = () => {
         locationLatitude: project.location?.latitude || '',
         locationLongitude: project.location?.longitude || '',
         locationAddress: project.location?.address || '',
+        // Well details
         wellDepth: project.wellDetails?.depth || '',
         wellDiameter: project.wellDetails?.diameter || '',
         wellCapacity: project.wellDetails?.capacity || '',
         wellWaterQuality: project.wellDetails?.waterQuality || '',
         wellPumpType: project.wellDetails?.pumpType || '',
+        // Mosque details
+        mosqueArea: project.mosqueDetails?.area || '',
+        mosqueCapacity: project.mosqueDetails?.capacity || '',
+        mosqueMinarets: project.mosqueDetails?.minarets || '',
+        mosqueDomes: project.mosqueDetails?.domes || '',
+        mosquePrayerHalls: project.mosqueDetails?.prayerHalls || '',
+        mosqueAblutionFacilities: project.mosqueDetails?.ablutionFacilities || '',
+        mosqueParkingSpaces: project.mosqueDetails?.parkingSpaces || '',
+        // Other details
+        otherDetails: project.otherDetails ? JSON.stringify(project.otherDetails, null, 2) : '',
         estimatedFamilies: project.beneficiaries?.estimatedFamilies || '',
         estimatedPeople: project.beneficiaries?.estimatedPeople || '',
         clientName: project.client?.name || '',
@@ -119,7 +143,32 @@ const ProjectForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    // If project type changes, reset type-specific fields
+    if (name === 'projectType') {
+      setFormData({
+        ...formData,
+        projectType: value,
+        // Reset well details
+        wellDepth: '',
+        wellDiameter: '',
+        wellCapacity: '',
+        wellWaterQuality: '',
+        wellPumpType: '',
+        // Reset mosque details
+        mosqueArea: '',
+        mosqueCapacity: '',
+        mosqueMinarets: '',
+        mosqueDomes: '',
+        mosquePrayerHalls: '',
+        mosqueAblutionFacilities: '',
+        mosqueParkingSpaces: '',
+        // Reset other details
+        otherDetails: '',
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -127,6 +176,7 @@ const ProjectForm = () => {
     setLoading(true);
 
     const payload = {
+      projectType: formData.projectType || PROJECT_TYPES.WELL,
       projectName: formData.projectName,
       description: formData.description || undefined,
       country: formData.country,
@@ -147,13 +197,6 @@ const ProjectForm = () => {
         longitude: parseFloat(formData.locationLongitude) || undefined,
         address: formData.locationAddress || undefined,
       },
-      wellDetails: {
-        depth: parseFloat(formData.wellDepth) || undefined,
-        diameter: parseFloat(formData.wellDiameter) || undefined,
-        capacity: parseFloat(formData.wellCapacity) || undefined,
-        waterQuality: formData.wellWaterQuality || undefined,
-        pumpType: formData.wellPumpType || undefined,
-      },
       beneficiaries: {
         estimatedFamilies: parseInt(formData.estimatedFamilies) || undefined,
         estimatedPeople: parseInt(formData.estimatedPeople) || undefined,
@@ -167,9 +210,43 @@ const ProjectForm = () => {
       notes: formData.notes,
     };
 
+    // Add type-specific details based on project type
+    if (formData.projectType === PROJECT_TYPES.WELL) {
+      payload.wellDetails = {
+        depth: parseFloat(formData.wellDepth) || undefined,
+        diameter: parseFloat(formData.wellDiameter) || undefined,
+        capacity: parseFloat(formData.wellCapacity) || undefined,
+        waterQuality: formData.wellWaterQuality || undefined,
+        pumpType: formData.wellPumpType || undefined,
+      };
+    } else if (formData.projectType === PROJECT_TYPES.MOSQUE) {
+      payload.mosqueDetails = {
+        area: parseFloat(formData.mosqueArea) || undefined,
+        capacity: parseInt(formData.mosqueCapacity) || undefined,
+        minarets: parseInt(formData.mosqueMinarets) || undefined,
+        domes: parseInt(formData.mosqueDomes) || undefined,
+        prayerHalls: parseInt(formData.mosquePrayerHalls) || undefined,
+        ablutionFacilities: parseInt(formData.mosqueAblutionFacilities) || undefined,
+        parkingSpaces: parseInt(formData.mosqueParkingSpaces) || undefined,
+      };
+    } else if (formData.projectType === PROJECT_TYPES.OTHER) {
+      // Parse JSON string to object for other details
+      try {
+        payload.otherDetails = formData.otherDetails ? JSON.parse(formData.otherDetails) : undefined;
+      } catch (e) {
+        // If invalid JSON, store as plain object with the text
+        payload.otherDetails = formData.otherDetails ? { notes: formData.otherDetails } : undefined;
+      }
+    }
+
     // Only include projectNumber if provided (admins/owners can set it manually)
     if (formData.projectNumber) {
       payload.projectNumber = formData.projectNumber;
+    }
+
+    // Ensure projectType is always set and valid
+    if (!payload.projectType || !Object.values(PROJECT_TYPES).includes(payload.projectType)) {
+      payload.projectType = formData.projectType || PROJECT_TYPES.WELL;
     }
 
     try {
@@ -217,6 +294,12 @@ const ProjectForm = () => {
     label: user.fullName,
   }));
 
+  const projectTypeOptions = [
+    { value: PROJECT_TYPES.WELL, label: t('projects.types.well') || 'Well' },
+    { value: PROJECT_TYPES.MOSQUE, label: t('projects.types.mosque') || 'Mosque' },
+    { value: PROJECT_TYPES.OTHER, label: t('projects.types.other') || 'Other' },
+  ];
+
   const priorityOptions = [
     { value: 'low', label: t('projects.priorityLow') },
     { value: 'medium', label: t('projects.priorityMedium') },
@@ -256,13 +339,20 @@ const ProjectForm = () => {
                   </p>
                 </div>
               )}
+            <Select
+              label={t('projects.projectType') || 'Project Type'}
+              name="projectType"
+              value={formData.projectType || PROJECT_TYPES.WELL}
+              onChange={handleChange}
+              options={projectTypeOptions}
+              required
+            />
             <Input
               label={t('projects.projectName')}
               name="projectName"
               value={formData.projectName}
               onChange={handleChange}
               required
-              className="md:col-span-2"
             />
             <Textarea
               label={t('projects.notes')}
@@ -411,46 +501,123 @@ const ProjectForm = () => {
           </div>
         </Card>
 
-        {/* Well Details */}
-        <Card title={t('projects.wellSpecifications')}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label={t('projects.depth')}
-              name="wellDepth"
-              type="number"
-              step="0.1"
-              value={formData.wellDepth}
+        {/* Well Details - Only show for well projects */}
+        {formData.projectType === PROJECT_TYPES.WELL && (
+          <Card title={t('projects.wellSpecifications')}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label={t('projects.depth')}
+                name="wellDepth"
+                type="number"
+                step="0.1"
+                value={formData.wellDepth}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.diameter')}
+                name="wellDiameter"
+                type="number"
+                step="0.1"
+                value={formData.wellDiameter}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.capacity')}
+                name="wellCapacity"
+                type="number"
+                value={formData.wellCapacity}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.waterQuality')}
+                name="wellWaterQuality"
+                value={formData.wellWaterQuality}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.pumpType')}
+                name="wellPumpType"
+                value={formData.wellPumpType}
+                onChange={handleChange}
+              />
+            </div>
+          </Card>
+        )}
+
+        {/* Mosque Details - Only show for mosque projects */}
+        {formData.projectType === PROJECT_TYPES.MOSQUE && (
+          <Card title={t('projects.mosqueSpecifications') || 'Mosque Specifications'}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label={t('projects.mosqueArea') || 'Area (m²)'}
+                name="mosqueArea"
+                type="number"
+                step="0.1"
+                value={formData.mosqueArea}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.mosqueCapacity') || 'Capacity (Worshippers)'}
+                name="mosqueCapacity"
+                type="number"
+                value={formData.mosqueCapacity}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.mosqueMinarets') || 'Number of Minarets'}
+                name="mosqueMinarets"
+                type="number"
+                value={formData.mosqueMinarets}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.mosqueDomes') || 'Number of Domes'}
+                name="mosqueDomes"
+                type="number"
+                value={formData.mosqueDomes}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.mosquePrayerHalls') || 'Prayer Halls'}
+                name="mosquePrayerHalls"
+                type="number"
+                value={formData.mosquePrayerHalls}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.mosqueAblutionFacilities') || 'Ablution Facilities'}
+                name="mosqueAblutionFacilities"
+                type="number"
+                value={formData.mosqueAblutionFacilities}
+                onChange={handleChange}
+              />
+              <Input
+                label={t('projects.mosqueParkingSpaces') || 'Parking Spaces'}
+                name="mosqueParkingSpaces"
+                type="number"
+                value={formData.mosqueParkingSpaces}
+                onChange={handleChange}
+              />
+            </div>
+          </Card>
+        )}
+
+        {/* Other Details - Only show for other project types */}
+        {formData.projectType === PROJECT_TYPES.OTHER && (
+          <Card title={t('projects.otherSpecifications') || 'Project Specifications'}>
+            <Textarea
+              label={t('projects.otherDetails') || 'Project Details (JSON format)'}
+              name="otherDetails"
+              value={formData.otherDetails}
               onChange={handleChange}
+              rows={8}
+              placeholder='{"field1": "value1", "field2": "value2"}'
             />
-            <Input
-              label={t('projects.diameter')}
-              name="wellDiameter"
-              type="number"
-              step="0.1"
-              value={formData.wellDiameter}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.capacity')}
-              name="wellCapacity"
-              type="number"
-              value={formData.wellCapacity}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.waterQuality')}
-              name="wellWaterQuality"
-              value={formData.wellWaterQuality}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.pumpType')}
-              name="wellPumpType"
-              value={formData.wellPumpType}
-              onChange={handleChange}
-            />
-          </div>
-        </Card>
+            <p className="mt-2 text-xs text-gray-500">
+              {t('projects.otherDetailsNote') || 'Enter project details in JSON format. Example: {"size": "100m²", "rooms": 5}'}
+            </p>
+          </Card>
+        )}
 
         {/* Beneficiaries */}
         <Card title={t('projects.beneficiaries')}>

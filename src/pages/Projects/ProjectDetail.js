@@ -16,6 +16,7 @@ import Textarea from '../../components/common/Textarea';
 import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
 import { formatDate, formatCurrency } from '../../utils/helpers';
+import { PROJECT_TYPES } from '../../utils/constants';
 import {
   PencilIcon,
   TrashIcon,
@@ -94,6 +95,9 @@ const ProjectDetail = memo(() => {
   const [rejectingPaymentId, setRejectingPaymentId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [newMediaFile, setNewMediaFile] = useState(null);
+  const [newMediaName, setNewMediaName] = useState('');
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   const fetchProject = useCallback(async () => {
     try {
@@ -220,6 +224,58 @@ const ProjectDetail = memo(() => {
     fetchPendingPayments();
   }, [fetchPayments, fetchPendingPayments]);
 
+  const handleFileSelect = useCallback((e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewMediaFile(file);
+    }
+  }, []);
+
+  const handleUploadMedia = useCallback(async () => {
+    if (!newMediaFile || !newMediaName.trim()) {
+      toast.error(t('projects.mediaNameAndFileRequired') || 'Please select a file and enter a name');
+      return;
+    }
+
+    setUploadingMedia(true);
+    try {
+      const response = await projectsAPI.uploadMedia(id, newMediaFile, newMediaName.trim());
+      toast.success(t('projects.mediaUploaded') || 'Media uploaded successfully');
+      setNewMediaFile(null);
+      setNewMediaName('');
+      document.getElementById('projectMediaFileInput')?.value && (document.getElementById('projectMediaFileInput').value = '');
+      fetchProject(); // Refresh project data
+    } catch (error) {
+      toast.error(error.response?.data?.message || t('projects.failedToUploadMedia') || 'Failed to upload media');
+    } finally {
+      setUploadingMedia(false);
+    }
+  }, [id, newMediaFile, newMediaName, fetchProject, t]);
+
+  const handleDeleteMedia = useCallback(async (mediaId) => {
+    if (!window.confirm(t('projects.confirmDeleteMedia') || 'Are you sure you want to delete this media?')) {
+      return;
+    }
+
+    try {
+      await projectsAPI.deleteMedia(id, mediaId);
+      toast.success(t('projects.mediaDeleted') || 'Media deleted successfully');
+      fetchProject(); // Refresh project data
+    } catch (error) {
+      toast.error(error.response?.data?.message || t('projects.failedToDeleteMedia') || 'Failed to delete media');
+    }
+  }, [id, fetchProject, t]);
+
+  const getFileIcon = useCallback((fileType) => {
+    if (fileType?.startsWith('image/')) {
+      return PhotoIcon;
+    }
+    if (fileType?.startsWith('video/')) {
+      return VideoCameraIcon;
+    }
+    return DocumentIcon;
+  }, []);
+
   const handleDelete = useCallback(async () => {
     setDeleteLoading(true);
     try {
@@ -332,6 +388,7 @@ const ProjectDetail = memo(() => {
   const canEdit = hasRole('super_admin', 'admin', 'project_manager');
   const canDelete = hasRole('super_admin', 'admin');
   const canReview = hasRole('super_admin', 'admin');
+  const canEvaluate = hasRole('super_admin', 'admin', 'client'); // Clients can evaluate their projects
   const isSuperAdmin = hasRole('super_admin');
   const showSensitiveInfo = isSuperAdmin; // Only super admin can see client details
 
@@ -364,13 +421,15 @@ const ProjectDetail = memo(() => {
               <Button variant="primary" size="sm" icon={ClipboardDocumentCheckIcon} onClick={() => setReviewModal(true)}>
                 {t('projects.reviewProject')}
               </Button>
-              <Button variant="primary" size="sm" icon={CheckCircleIcon} onClick={() => setEvaluationModal(true)}>
-                {t('projects.evaluateProject')}
-              </Button>
               <Button variant="primary" size="sm" icon={BanknotesIcon} onClick={() => setPaymentModal(true)}>
                 {t('payments.createPayment')}
               </Button>
             </>
+          )}
+          {canEvaluate && (
+            <Button variant="primary" size="sm" icon={CheckCircleIcon} onClick={() => setEvaluationModal(true)}>
+              {t('projects.evaluateProject')}
+            </Button>
           )}
           {canEdit && (
             <>
@@ -611,14 +670,14 @@ const ProjectDetail = memo(() => {
             </Card>
           )} */}
 
-          {/* Well Details */}
-          {project.wellDetails && (
+          {/* Well Details - Only show for well projects */}
+          {project.projectType === PROJECT_TYPES.WELL && project.wellDetails && (
             <Card title={t('projects.wellSpecifications')}>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {project.wellDetails.depth && (
                   <div className="text-center p-4 bg-secondary-50 rounded-xl">
                     <p className="text-2xl font-bold text-secondary-900">{project.wellDetails.depth}</p>
-                    <p className="text-xs text-secondary-500 mt-1">{t('projects.depthShort')}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.depthShort') || t('projects.depth')}</p>
                   </div>
                 )}
                 {project.wellDetails.diameter && (
@@ -639,6 +698,73 @@ const ProjectDetail = memo(() => {
                     <p className="text-xs text-secondary-500 mt-1">{t('projects.waterQuality')}</p>
                   </div>
                 )}
+                {project.wellDetails.pumpType && (
+                  <div className="text-center p-4 bg-secondary-50 rounded-xl">
+                    <p className="text-lg font-bold text-secondary-900">{project.wellDetails.pumpType}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.pumpType')}</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Mosque Details - Only show for mosque projects */}
+          {project.projectType === PROJECT_TYPES.MOSQUE && project.mosqueDetails && (
+            <Card title={t('projects.mosqueSpecifications') || 'Mosque Specifications'}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {project.mosqueDetails.area && (
+                  <div className="text-center p-4 bg-secondary-50 rounded-xl">
+                    <p className="text-2xl font-bold text-secondary-900">{project.mosqueDetails.area}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.mosqueArea') || 'Area (m²)'}</p>
+                  </div>
+                )}
+                {project.mosqueDetails.capacity && (
+                  <div className="text-center p-4 bg-secondary-50 rounded-xl">
+                    <p className="text-2xl font-bold text-secondary-900">{project.mosqueDetails.capacity}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.mosqueCapacity') || 'Capacity'}</p>
+                  </div>
+                )}
+                {project.mosqueDetails.minarets && (
+                  <div className="text-center p-4 bg-secondary-50 rounded-xl">
+                    <p className="text-2xl font-bold text-secondary-900">{project.mosqueDetails.minarets}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.mosqueMinarets') || 'Minarets'}</p>
+                  </div>
+                )}
+                {project.mosqueDetails.domes && (
+                  <div className="text-center p-4 bg-secondary-50 rounded-xl">
+                    <p className="text-2xl font-bold text-secondary-900">{project.mosqueDetails.domes}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.mosqueDomes') || 'Domes'}</p>
+                  </div>
+                )}
+                {project.mosqueDetails.prayerHalls && (
+                  <div className="text-center p-4 bg-secondary-50 rounded-xl">
+                    <p className="text-2xl font-bold text-secondary-900">{project.mosqueDetails.prayerHalls}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.mosquePrayerHalls') || 'Prayer Halls'}</p>
+                  </div>
+                )}
+                {project.mosqueDetails.ablutionFacilities && (
+                  <div className="text-center p-4 bg-secondary-50 rounded-xl">
+                    <p className="text-2xl font-bold text-secondary-900">{project.mosqueDetails.ablutionFacilities}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.mosqueAblutionFacilities') || 'Ablution Facilities'}</p>
+                  </div>
+                )}
+                {project.mosqueDetails.parkingSpaces && (
+                  <div className="text-center p-4 bg-secondary-50 rounded-xl">
+                    <p className="text-2xl font-bold text-secondary-900">{project.mosqueDetails.parkingSpaces}</p>
+                    <p className="text-xs text-secondary-500 mt-1">{t('projects.mosqueParkingSpaces') || 'Parking Spaces'}</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Other Project Details - Only show for other project types */}
+          {project.projectType === PROJECT_TYPES.OTHER && project.otherDetails && (
+            <Card title={t('projects.otherSpecifications') || 'Project Specifications'}>
+              <div className="space-y-4">
+                <pre className="p-4 bg-secondary-50 rounded-xl text-sm text-secondary-700 overflow-x-auto">
+                  {JSON.stringify(project.otherDetails, null, 2)}
+                </pre>
               </div>
             </Card>
           )}
@@ -1106,6 +1232,117 @@ const ProjectDetail = memo(() => {
             </Card>
           )}
 
+          {/* Project Media - Only for Contractors */}
+          {hasRole('contractor') && (
+            project.contractor?._id?.toString() === user?._id?.toString() ||
+            (typeof project.contractor === 'string' && project.contractor === user?._id?.toString())
+          ) && (
+              <Card title={t('projects.projectMedia') || 'Project Media & Documents'}>
+                <div className="space-y-4">
+                  {/* Upload New Media */}
+                  <div className="p-4 bg-secondary-50 rounded-xl border-2 border-dashed border-secondary-300">
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-secondary-700 mb-2">
+                          {t('projects.mediaName') || 'Media Name'}
+                        </label>
+                        <Input
+                          value={newMediaName}
+                          onChange={(e) => setNewMediaName(e.target.value)}
+                          placeholder={t('projects.mediaNamePlaceholder') || 'e.g., Site Photo, Contract, Permit...'}
+                          className="mb-3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-secondary-700 mb-2">
+                          {t('projects.selectFile') || 'Select File'}
+                        </label>
+                        <input
+                          id="projectMediaFileInput"
+                          type="file"
+                          onChange={handleFileSelect}
+                          accept="image/*,application/pdf,.doc,.docx,video/*"
+                          className="block w-full text-sm text-secondary-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                        />
+                      </div>
+                      {newMediaFile && (
+                        <div className="flex items-center gap-2 text-sm text-secondary-600">
+                          <DocumentIcon className="w-5 h-5" />
+                          <span>{newMediaFile.name}</span>
+                          <span className="text-secondary-400">
+                            ({(newMediaFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                      )}
+                      <Button
+                        type="button"
+                        onClick={handleUploadMedia}
+                        loading={uploadingMedia}
+                        disabled={!newMediaFile || !newMediaName.trim()}
+                        size="sm"
+                        icon={PhotoIcon}
+                      >
+                        {t('projects.uploadMedia') || 'Upload to Google Drive'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Existing Media */}
+                  {project.media && project.media.length > 0 ? (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-secondary-900 mb-3">
+                        {t('projects.uploadedMedia') || 'Uploaded Media'}
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {project.media.map((media) => {
+                          const Icon = getFileIcon(media.fileType);
+                          return (
+                            <div
+                              key={media._id}
+                              className="flex items-center gap-3 p-3 bg-white border border-secondary-200 rounded-xl hover:border-primary-300 transition-colors"
+                            >
+                              <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+                                <Icon className="w-5 h-5 text-primary-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-secondary-900 truncate">{media.name}</p>
+                                <p className="text-xs text-secondary-500 truncate">{media.fileName}</p>
+                                <p className="text-xs text-secondary-400">
+                                  {formatDate(media.uploadedAt)}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <a
+                                  href={media.googleDriveUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                  title={t('common.view')}
+                                >
+                                  <LinkIcon className="w-5 h-5" />
+                                </a>
+                                <button
+                                  onClick={() => handleDeleteMedia(media._id)}
+                                  className="p-2 text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
+                                  title={t('common.delete')}
+                                >
+                                  <XCircleIcon className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-secondary-500 text-center py-4">
+                      {t('projects.noMediaUploaded') || 'No media uploaded yet'}
+                    </p>
+                  )}
+                </div>
+              </Card>
+            )}
+
           {/* Google Drive */}
           {project.googleDriveFolderUrl && (
             <Card title={t('projects.documents')}>
@@ -1172,13 +1409,18 @@ const ProjectDetail = memo(() => {
           )}
 
           {/* Evaluation Information */}
-          {project.evaluation?.evaluatedBy && (
+          {(project.evaluation?.evaluatedBy || project.evaluation?.evaluatedAt) && (
             <Card title={t('projects.evaluationInformation') || 'Evaluation Information'}>
               <div className="space-y-4">
                 <InfoItem
                   icon={UserIcon}
                   label={t('projects.evaluatedBy') || 'Evaluated By'}
-                  value={project.evaluation.evaluatedBy?.fullName}
+                  value={
+                    project.evaluation.evaluatedBy?.fullName ||
+                    project.client?.name ||
+                    t('projects.client') ||
+                    'Client'
+                  }
                 />
                 {project.evaluation.evaluatedAt && (
                   <InfoItem

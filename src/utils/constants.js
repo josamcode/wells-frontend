@@ -6,6 +6,12 @@ export const ROLES = {
   VIEWER: 'viewer',
 };
 
+export const PROJECT_TYPES = {
+  WELL: 'well',
+  MOSQUE: 'mosque',
+  OTHER: 'other',
+};
+
 export const PROJECT_STATUS = {
   PLANNED: 'planned',
   IN_PROGRESS: 'in_progress',
