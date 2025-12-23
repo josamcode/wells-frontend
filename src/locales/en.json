@@ -111,6 +111,7 @@
     "tableView": "Table view",
     "cardView": "Card view",
     "selectOption": "Select an option",
+    "noResults": "No results found",
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
     "search": "Search",

@@ -111,6 +111,7 @@
     "tableView": "عرض الجدول",
     "cardView": "عرض البطاقات",
     "selectOption": "اختر خياراً",
+    "noResults": "لا توجد نتائج",
     "selectAll": "تحديد الكل",
     "deselectAll": "إلغاء تحديد الكل",
     "search": "بحث",

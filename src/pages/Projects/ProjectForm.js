@@ -9,6 +9,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
+import SearchableSelect from '../../components/common/SearchableSelect';
 import Textarea from '../../components/common/Textarea';
 import { COUNTRIES, PROJECT_STATUS, PROJECT_TYPES } from '../../utils/constants';
 
@@ -368,12 +369,13 @@ const ProjectForm = () => {
         {/* Location */}
         <Card title={t('projects.location')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
+            <SearchableSelect
               label={t('projects.country')}
               name="country"
               value={formData.country}
               onChange={handleChange}
               options={countryOptions}
+              placeholder={t('common.selectOption') || 'Select country...'}
               required
             />
             <Input
