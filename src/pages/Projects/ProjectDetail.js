@@ -2189,11 +2189,11 @@ const ProjectDetail = memo(() => {
           )}
 
           {/* Client Evaluation */}
-          {project.clientEvaluation?.evaluatedAt && hasRole('client') && (
+          {project.clientEvaluation?.evaluatedAt && (hasRole('client') || hasRole('super_admin') || hasRole('admin')) && (
             <HoverCard>
               <div className="px-6 py-4 border-b border-secondary-100 bg-gradient-to-r from-warning-50/50 to-transparent">
                 <h3 className="text-sm font-semibold text-secondary-900 uppercase tracking-wider">
-                  {t('projects.clientEvaluation') || 'Your Evaluation'}
+                  {hasRole('client') ? (t('projects.myEvaluation') || 'Your Evaluation') : (t('projects.clientEvaluation') || 'Client Evaluation')}
                 </h3>
               </div>
               <div className="p-4 space-y-4">
