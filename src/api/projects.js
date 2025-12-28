@@ -49,5 +49,14 @@ export const projectsAPI = {
   },
   deleteContract: (projectId) => axios.delete(`/projects/${projectId}/contract`),
   getContract: (projectId) => axios.get(`/projects/${projectId}/contract`, { responseType: 'blob' }),
+  uploadProjectReport: (projectId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axios.post(`/projects/${projectId}/reports`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  deleteProjectReport: (projectId, reportId) => axios.delete(`/projects/${projectId}/reports/${reportId}`),
+  getProjectReport: (projectId, reportId) => axios.get(`/projects/${projectId}/reports/${reportId}`, { responseType: 'blob' }),
 };
 

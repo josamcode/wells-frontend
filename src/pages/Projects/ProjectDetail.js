@@ -316,6 +316,8 @@ const ProjectDetail = memo(() => {
   const [newMediaName, setNewMediaName] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [contractFile, setContractFile] = useState(null);
+  const [reportFile, setReportFile] = useState(null);
+  const [uploadingReport, setUploadingReport] = useState(false);
   const [uploadingContract, setUploadingContract] = useState(false);
 
   // ==================== FETCH FUNCTIONS ====================
@@ -566,6 +568,92 @@ const ProjectDetail = memo(() => {
       fetchProject();
     } catch (error) {
       toast.error(error.response?.data?.message || t('projects.failedToDeleteContract') || 'Failed to delete contract');
+    }
+  }, [id, fetchProject, t]);
+
+  // Project Reports handlers
+  const handleReportFileChange = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(t('projects.contractFileTypeError') || 'Only PDF and image files are allowed');
+        e.target.value = '';
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(t('projects.contractFileSizeError') || 'File size must be less than 10MB');
+        e.target.value = '';
+        return;
+      }
+      setReportFile(file);
+      handleUploadReport(file);
+    }
+  }, [t]);
+
+  const handleUploadReport = useCallback(async (file) => {
+    if (!file) return;
+    setUploadingReport(true);
+    try {
+      await projectsAPI.uploadProjectReport(id, file);
+      toast.success(t('projects.reportUploaded') || 'Report uploaded successfully');
+      setReportFile(null);
+      const input = document.getElementById('reportFileInput');
+      if (input) input.value = '';
+      fetchProject();
+    } catch (error) {
+      toast.error(error.response?.data?.message || t('projects.failedToUploadReport') || 'Failed to upload report');
+    } finally {
+      setUploadingReport(false);
+    }
+  }, [id, fetchProject, t]);
+
+  const handleViewReport = useCallback(async (reportId) => {
+    try {
+      const response = await projectsAPI.getProjectReport(id, reportId);
+      const report = project?.projectReports?.find(r => r._id === reportId);
+      const contentType = response.headers['content-type'] || report?.fileType || 'application/pdf';
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.click();
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        toast.error('Authentication required. Please login again.');
+      } else if (error.response?.status === 403) {
+        toast.error('You do not have permission to view this report.');
+      } else if (error.response?.status === 404) {
+        toast.error('Report not found.');
+      } else {
+        if (error.response?.data instanceof Blob) {
+          try {
+            const text = await error.response.data.text();
+            const errorData = JSON.parse(text);
+            toast.error(errorData.message || 'Failed to load report');
+          } catch {
+            toast.error('Failed to load report');
+          }
+        } else {
+          toast.error(error.response?.data?.message || 'Failed to load report');
+        }
+      }
+    }
+  }, [id, project?.projectReports]);
+
+  const handleDeleteReport = useCallback(async (reportId) => {
+    if (!window.confirm(t('projects.confirmDeleteReport') || 'Are you sure you want to delete this report?')) {
+      return;
+    }
+    try {
+      await projectsAPI.deleteProjectReport(id, reportId);
+      toast.success(t('projects.reportDeleted') || 'Report deleted successfully');
+      fetchProject();
+    } catch (error) {
+      toast.error(error.response?.data?.message || t('projects.failedToDeleteReport') || 'Failed to delete report');
     }
   }, [id, fetchProject, t]);
 
@@ -1585,61 +1673,94 @@ const ProjectDetail = memo(() => {
               <div className="px-6 py-5 border-b border-secondary-100 bg-gradient-to-r from-primary-50/50 to-transparent">
                 <SectionHeader
                   icon={DocumentTextIcon}
-                  title={t('reports.title')}
+                  title={t('projects.projectReports') || 'Project Reports'}
                   action={
-                    hasRole('contractor') && (
-                      <Link to={`/reports/new?project=${id}`}>
-                        <Button size="sm" variant="outline" icon={DocumentTextIcon}>
-                          {t('reports.newReport')}
-                        </Button>
-                      </Link>
+                    (hasRole('super_admin') || hasRole('admin')) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={DocumentTextIcon}
+                        onClick={() => document.getElementById('reportFileInput')?.click()}
+                        disabled={uploadingReport}
+                      >
+                        {uploadingReport ? t('common.loading') : (t('projects.uploadReport') || 'Upload Report')}
+                      </Button>
                     )
                   }
                 />
               </div>
-              <div className="p-4">
-                {reports.length > 0 ? (
-                  <div className="space-y-2">
-                    {reports.slice(0, 5).map((report) => (
-                      <Link
+              <div className="p-6">
+                {project?.projectReports && project.projectReports.length > 0 ? (
+                  <div className="space-y-3">
+                    {project.projectReports.map((report) => (
+                      <div
                         key={report._id}
-                        to={`/reports/${report._id}`}
-                        className="flex items-center gap-3 p-3 rounded-xl border-2 border-transparent hover:bg-secondary-50 hover:border-secondary-200 hover:shadow-sm transition-all group"
+                        className="p-4 bg-secondary-50 rounded-xl border-2 border-secondary-200 hover:shadow-md transition-all"
                       >
-                        <div className="w-10 h-10 rounded-lg bg-success-50 flex items-center justify-center flex-shrink-0 group-hover:bg-success-100 group-hover:scale-110 transition-all">
-                          <DocumentTextIcon className="w-5 h-5 text-success-600" />
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            {report.fileType?.startsWith('image/') ? (
+                              <PhotoIcon className="w-6 h-6 text-primary-600" />
+                            ) : (
+                              <DocumentTextIcon className="w-6 h-6 text-primary-600" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-secondary-900 truncate">
+                              {report.fileName || t('projects.reportFile') || 'Report File'}
+                            </p>
+                            <p className="text-xs text-secondary-500 mt-0.5">
+                              {formatDate(report.uploadedAt)} {report.uploadedBy && `• ${report.uploadedBy.fullName || ''}`}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleViewReport(report._id)}
+                              className="p-2.5 text-primary-600 hover:bg-primary-50 rounded-lg transition-all hover:scale-110"
+                              title={t('common.view')}
+                            >
+                              <EyeIcon className="w-5 h-5" />
+                            </button>
+                            {(hasRole('super_admin') || hasRole('admin')) && (
+                              <button
+                                onClick={() => handleDeleteReport(report._id)}
+                                className="p-2.5 text-danger-600 hover:bg-danger-50 rounded-lg transition-all hover:scale-110"
+                                title={t('common.delete')}
+                              >
+                                <TrashIcon className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-secondary-900 truncate">
-                            {language === 'ar' && report.titleAr ? report.titleAr : report.title}
-                          </p>
-                          <p className="text-xs text-secondary-500">
-                            {report.reportNumber} • {formatDate(report.workDate)}
-                          </p>
-                        </div>
-                        <Badge status={report.status} size="sm">
-                          {t(`reports.statuses.${report.status}`)}
-                        </Badge>
-                        <ChevronRightIcon className="w-4 h-4 text-secondary-400 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
-                      </Link>
+                      </div>
                     ))}
-                    {reports.length > 5 && (
-                      <Link
-                        to={`/reports?project=${id}`}
-                        className="block text-center py-3 text-sm font-medium text-primary-600 hover:text-primary-700"
-                      >
-                        {t('dashboard.viewAll')} ({reports.length})
-                      </Link>
-                    )}
                   </div>
                 ) : (
                   <div className="text-center py-10">
                     <div className="w-14 h-14 rounded-2xl bg-secondary-100 mx-auto mb-3 flex items-center justify-center">
                       <DocumentTextIcon className="w-7 h-7 text-secondary-400" />
                     </div>
-                    <p className="text-secondary-500 text-sm">{t('reports.noReports')}</p>
+                    <p className="text-secondary-500 text-sm mb-4">{t('projects.noProjectReports') || 'No reports uploaded'}</p>
+                    {(hasRole('super_admin') || hasRole('admin')) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={DocumentTextIcon}
+                        onClick={() => document.getElementById('reportFileInput')?.click()}
+                        disabled={uploadingReport}
+                      >
+                        {uploadingReport ? t('common.loading') : (t('projects.uploadReport') || 'Upload Report')}
+                      </Button>
+                    )}
                   </div>
                 )}
+                <input
+                  id="reportFileInput"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,application/pdf,image/*"
+                  className="hidden"
+                  onChange={handleReportFileChange}
+                />
               </div>
             </HoverCard>
 
@@ -1802,6 +1923,68 @@ const ProjectDetail = memo(() => {
                   {t(`projects.statuses.${project.status}`)}
                 </Badge>
               </div>
+            </div>
+          </HoverCard>
+
+          <HoverCard>
+            <div className="px-6 py-5 border-b border-secondary-100 bg-gradient-to-r from-primary-50/50 to-transparent">
+              <SectionHeader
+                icon={DocumentTextIcon}
+                title={t('reports.contractorReports')}
+                action={
+                  hasRole('contractor') && (
+                    <Link to={`/reports/new?project=${id}`}>
+                      <Button size="sm" variant="outline" icon={DocumentTextIcon}>
+                        {t('reports.newReport')}
+                      </Button>
+                    </Link>
+                  )
+                }
+              />
+            </div>
+            <div className="p-4">
+              {reports.length > 0 ? (
+                <div className="space-y-2">
+                  {reports.slice(0, 5).map((report) => (
+                    <Link
+                      key={report._id}
+                      to={`/reports/${report._id}`}
+                      className="flex items-center gap-3 p-3 rounded-xl border-2 border-transparent hover:bg-secondary-50 hover:border-secondary-200 hover:shadow-sm transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-success-50 flex items-center justify-center flex-shrink-0 group-hover:bg-success-100 group-hover:scale-110 transition-all">
+                        <DocumentTextIcon className="w-5 h-5 text-success-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-secondary-900 truncate">
+                          {language === 'ar' && report.titleAr ? report.titleAr : report.title}
+                        </p>
+                        <p className="text-xs text-secondary-500">
+                          {report.reportNumber} • {formatDate(report.workDate)}
+                        </p>
+                      </div>
+                      <Badge status={report.status} size="sm">
+                        {t(`reports.statuses.${report.status}`)}
+                      </Badge>
+                      <ChevronRightIcon className="w-4 h-4 text-secondary-400 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
+                    </Link>
+                  ))}
+                  {reports.length > 5 && (
+                    <Link
+                      to={`/reports?project=${id}`}
+                      className="block text-center py-3 text-sm font-medium text-primary-600 hover:text-primary-700"
+                    >
+                      {t('dashboard.viewAll')} ({reports.length})
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <div className="w-14 h-14 rounded-2xl bg-secondary-100 mx-auto mb-3 flex items-center justify-center">
+                    <DocumentTextIcon className="w-7 h-7 text-secondary-400" />
+                  </div>
+                  <p className="text-secondary-500 text-sm">{t('reports.noReports')}</p>
+                </div>
+              )}
             </div>
           </HoverCard>
 

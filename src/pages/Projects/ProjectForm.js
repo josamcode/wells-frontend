@@ -1,17 +1,156 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, memo } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { projectsAPI } from '../../api/projects';
 import { usersAPI } from '../../api/users';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
-import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import SearchableSelect from '../../components/common/SearchableSelect';
 import Textarea from '../../components/common/Textarea';
 import { COUNTRIES, PROJECT_STATUS, PROJECT_TYPES } from '../../utils/constants';
+import {
+  ArrowLeftIcon,
+  DocumentTextIcon,
+  MapPinIcon,
+  CogIcon,
+  CurrencyDollarIcon,
+  WrenchScrewdriverIcon,
+  BuildingOfficeIcon,
+  UserGroupIcon,
+  UserIcon,
+  ClipboardDocumentListIcon,
+  SparklesIcon,
+  CheckCircleIcon,
+  InformationCircleIcon,
+  ChartBarIcon,
+  TagIcon,
+} from '@heroicons/react/24/outline';
+
+// ==================== REUSABLE COMPONENTS ====================
+
+// Enhanced 3D Section Card with hover effects
+const SectionCard = memo(({ icon: Icon, title, subtitle, children, variant = 'default', className = '' }) => {
+  const variants = {
+    default: 'from-secondary-50/80 to-transparent border-secondary-200',
+    primary: 'from-primary-50/80 to-transparent border-primary-200',
+    success: 'from-success-50/80 to-transparent border-success-200',
+    warning: 'from-warning-50/80 to-transparent border-warning-200',
+    info: 'from-info-50/80 to-transparent border-info-200',
+    purple: 'from-purple-50/80 to-transparent border-purple-200',
+  };
+
+  const iconVariants = {
+    default: 'from-secondary-400 to-secondary-600',
+    primary: 'from-primary-400 to-primary-600',
+    success: 'from-success-400 to-success-600',
+    warning: 'from-warning-400 to-warning-600',
+    info: 'from-info-400 to-info-600',
+    purple: 'from-purple-400 to-purple-600',
+  };
+
+  const glowVariants = {
+    default: 'hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12)]',
+    primary: 'hover:shadow-[0_25px_50px_-12px_rgba(59,130,246,0.2)]',
+    success: 'hover:shadow-[0_25px_50px_-12px_rgba(34,197,94,0.2)]',
+    warning: 'hover:shadow-[0_25px_50px_-12px_rgba(234,179,8,0.2)]',
+    info: 'hover:shadow-[0_25px_50px_-12px_rgba(6,182,212,0.2)]',
+    purple: 'hover:shadow-[0_25px_50px_-12px_rgba(147,51,234,0.2)]',
+  };
+
+  return (
+    <div
+      className={`
+        group/card bg-white rounded-2xl border-2 overflow-hidden
+        shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08),0_2px_8px_-2px_rgba(0,0,0,0.04)]
+        transition-all duration-300 ease-out
+        hover:-translate-y-2 
+        hover:border-opacity-80
+        ${glowVariants[variant]}
+        relative
+        ${className}
+      `}
+    >
+      {/* Top highlight line */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+
+      {/* Inner glow on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+      {/* Header */}
+      <div className={`px-6 py-5 border-b bg-gradient-to-r ${variants[variant]}`}>
+        <div className="flex items-center gap-4">
+          {Icon && (
+            <div className={`
+              w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center
+              shadow-lg transition-all duration-300
+              group-hover/card:scale-110 group-hover/card:rotate-3
+              ${iconVariants[variant]}
+            `}>
+              <Icon className="w-6 h-6 text-white" />
+            </div>
+          )}
+          <div>
+            <h3 className="text-lg font-bold text-secondary-900">{title}</h3>
+            {subtitle && <p className="text-sm text-secondary-500 mt-0.5">{subtitle}</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-6 relative">
+        {children}
+      </div>
+    </div>
+  );
+});
+
+SectionCard.displayName = 'SectionCard';
+
+// Enhanced Form Field with subtle hover effect
+const FormField = memo(({ children, className = '', span = false }) => (
+  <div className={`
+    group/field relative transition-all duration-200
+    ${span ? 'md:col-span-2' : ''}
+    ${className}
+  `}>
+    {children}
+  </div>
+));
+
+FormField.displayName = 'FormField';
+
+// Stat tile for specifications
+const SpecTile = memo(({ label, children, variant = 'default' }) => {
+  const variants = {
+    default: 'from-secondary-50 to-secondary-100/50 border-secondary-200 hover:border-secondary-300',
+    primary: 'from-primary-50 to-primary-100/50 border-primary-200 hover:border-primary-300',
+    success: 'from-success-50 to-success-100/50 border-success-200 hover:border-success-300',
+    warning: 'from-warning-50 to-warning-100/50 border-warning-200 hover:border-warning-300',
+    info: 'from-info-50 to-info-100/50 border-info-200 hover:border-info-300',
+  };
+
+  return (
+    <div className={`
+      group p-4 rounded-xl bg-gradient-to-br border-2 
+      transition-all duration-300 ease-out
+      hover:shadow-lg hover:-translate-y-1
+      ${variants[variant]}
+    `}>
+      <label className="block text-xs font-bold text-secondary-500 uppercase tracking-wider mb-2 
+        group-hover:text-secondary-700 transition-colors">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+});
+
+SpecTile.displayName = 'SpecTile';
+
+// ==================== MAIN COMPONENT ====================
 
 const ProjectForm = () => {
   const { t } = useTranslation();
@@ -24,6 +163,7 @@ const ProjectForm = () => {
   const [contractors, setContractors] = useState([]);
   const [projectManagers, setProjectManagers] = useState([]);
   const [projectCreatedBy, setProjectCreatedBy] = useState(null);
+  const [originalProjectType, setOriginalProjectType] = useState(null);
   const [formData, setFormData] = useState({
     projectNumber: '',
     projectType: 'well',
@@ -43,13 +183,11 @@ const ProjectForm = () => {
     locationLatitude: '',
     locationLongitude: '',
     locationAddress: '',
-    // Well details
     wellDepth: '',
     wellDiameter: '',
     wellCapacity: '',
     wellWaterQuality: '',
     wellPumpType: '',
-    // Mosque details
     mosqueArea: '',
     mosqueCapacity: '',
     mosqueMinarets: '',
@@ -57,7 +195,6 @@ const ProjectForm = () => {
     mosquePrayerHalls: '',
     mosqueAblutionFacilities: '',
     mosqueParkingSpaces: '',
-    // Other details (stored as JSON string, parsed when needed)
     otherDetails: '',
     estimatedFamilies: '',
     estimatedPeople: '',
@@ -112,13 +249,11 @@ const ProjectForm = () => {
         locationLatitude: project.location?.latitude || '',
         locationLongitude: project.location?.longitude || '',
         locationAddress: project.location?.address || '',
-        // Well details
         wellDepth: project.wellDetails?.depth || '',
         wellDiameter: project.wellDetails?.diameter || '',
         wellCapacity: project.wellDetails?.capacity || '',
         wellWaterQuality: project.wellDetails?.waterQuality || '',
         wellPumpType: project.wellDetails?.pumpType || '',
-        // Mosque details
         mosqueArea: project.mosqueDetails?.area || '',
         mosqueCapacity: project.mosqueDetails?.capacity || '',
         mosqueMinarets: project.mosqueDetails?.minarets || '',
@@ -126,7 +261,6 @@ const ProjectForm = () => {
         mosquePrayerHalls: project.mosqueDetails?.prayerHalls || '',
         mosqueAblutionFacilities: project.mosqueDetails?.ablutionFacilities || '',
         mosqueParkingSpaces: project.mosqueDetails?.parkingSpaces || '',
-        // Other details
         otherDetails: project.otherDetails ? JSON.stringify(project.otherDetails, null, 2) : '',
         estimatedFamilies: project.beneficiaries?.estimatedFamilies || '',
         estimatedPeople: project.beneficiaries?.estimatedPeople || '',
@@ -145,18 +279,15 @@ const ProjectForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // If project type changes, reset type-specific fields
     if (name === 'projectType') {
       setFormData({
         ...formData,
         projectType: value,
-        // Reset well details
         wellDepth: '',
         wellDiameter: '',
         wellCapacity: '',
         wellWaterQuality: '',
         wellPumpType: '',
-        // Reset mosque details
         mosqueArea: '',
         mosqueCapacity: '',
         mosqueMinarets: '',
@@ -164,7 +295,6 @@ const ProjectForm = () => {
         mosquePrayerHalls: '',
         mosqueAblutionFacilities: '',
         mosqueParkingSpaces: '',
-        // Reset other details
         otherDetails: '',
       });
     } else {
@@ -211,7 +341,18 @@ const ProjectForm = () => {
       notes: formData.notes,
     };
 
-    // Add type-specific details based on project type
+    // If project type changed, explicitly clear old type-specific details
+    if (isEditMode && originalProjectType && originalProjectType !== formData.projectType) {
+      if (originalProjectType === PROJECT_TYPES.WELL) {
+        payload.wellDetails = null;
+      } else if (originalProjectType === PROJECT_TYPES.MOSQUE) {
+        payload.mosqueDetails = null;
+      } else if (originalProjectType === PROJECT_TYPES.OTHER) {
+        payload.otherDetails = null;
+      }
+    }
+
+    // Set new type-specific details
     if (formData.projectType === PROJECT_TYPES.WELL) {
       payload.wellDetails = {
         depth: parseFloat(formData.wellDepth) || undefined,
@@ -231,21 +372,17 @@ const ProjectForm = () => {
         parkingSpaces: parseInt(formData.mosqueParkingSpaces) || undefined,
       };
     } else if (formData.projectType === PROJECT_TYPES.OTHER) {
-      // Parse JSON string to object for other details
       try {
         payload.otherDetails = formData.otherDetails ? JSON.parse(formData.otherDetails) : undefined;
       } catch (e) {
-        // If invalid JSON, store as plain object with the text
         payload.otherDetails = formData.otherDetails ? { notes: formData.otherDetails } : undefined;
       }
     }
 
-    // Only include projectNumber if provided (admins/owners can set it manually)
     if (formData.projectNumber) {
       payload.projectNumber = formData.projectNumber;
     }
 
-    // Ensure projectType is always set and valid
     if (!payload.projectType || !Object.values(PROJECT_TYPES).includes(payload.projectType)) {
       payload.projectType = formData.projectType || PROJECT_TYPES.WELL;
     }
@@ -260,11 +397,9 @@ const ProjectForm = () => {
       }
       navigate('/projects');
     } catch (error) {
-      // Extract detailed error messages
       const errorData = error.response?.data;
       let errorMessage = errorData?.message || t('projects.failedToSaveProject');
 
-      // If there are specific validation errors, show the first one
       if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
         errorMessage = errorData.errors[0].msg || errorMessage;
       }
@@ -309,386 +444,706 @@ const ProjectForm = () => {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          {isEditMode ? t('common.edit') : t('common.create')} {t('projects.title')}
-        </h1>
+    <div className="max-w-5xl mx-auto animate-fade-in pb-8">
+      {/* ==================== HEADER ==================== */}
+      <div className="relative mb-8">
+        {/* Background Decoration */}
+        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-100/40 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-success-100/30 rounded-full blur-3xl" />
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link
+              to="/projects"
+              className="group p-3 rounded-xl bg-white border-2 border-secondary-200 text-secondary-500 
+                hover:text-primary-600 hover:border-primary-300 hover:shadow-lg hover:-translate-y-1 
+                transition-all duration-300 shadow-sm"
+            >
+              <ArrowLeftIcon className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+            </Link>
+
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`
+                  inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg
+                  shadow-sm transition-all duration-200 hover:scale-105
+                  ${isEditMode
+                    ? 'bg-gradient-to-r from-warning-50 to-warning-100 text-warning-700 border border-warning-200'
+                    : 'bg-gradient-to-r from-success-50 to-success-100 text-success-700 border border-success-200'
+                  }
+                `}>
+                  {isEditMode ? (
+                    <>
+                      <CogIcon className="w-4 h-4" />
+                      {t('common.editing') || 'Editing'}
+                    </>
+                  ) : (
+                    <>
+                      <SparklesIcon className="w-4 h-4" />
+                      {t('common.creating') || 'Creating New'}
+                    </>
+                  )}
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-secondary-900 tracking-tight">
+                {isEditMode ? t('common.edit') : t('common.create')} {t('projects.title')}
+              </h1>
+              <p className="text-secondary-500 mt-1 text-sm">
+                {isEditMode
+                  ? t('projects.editDescription') || 'Update project details and specifications'
+                  : t('projects.createDescription') || 'Fill in the details to create a new project'
+                }
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-3 sm:ml-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/projects')}
+              className="shadow-sm hover:shadow-md"
+            >
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
       </div>
 
+      {/* ==================== FORM ==================== */}
       <form onSubmit={handleSubmit} className="space-y-6">
+
         {/* Basic Information */}
-        <Card title={t('projects.basicInformation')}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Project Number - Only visible to admins or project owners */}
+        <SectionCard
+          icon={DocumentTextIcon}
+          title={t('projects.basicInformation')}
+          subtitle={t('projects.basicInformationDesc') || 'Core project details and identification'}
+          variant="primary"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Project Number */}
             {(() => {
               const isAdmin = hasRole('super_admin', 'admin');
               const isOwner = !isEditMode || (user && projectCreatedBy &&
                 (projectCreatedBy._id === user._id || projectCreatedBy === user._id));
               return isAdmin || isOwner;
             })() && (
-                <div className="md:col-span-2">
-                  <Input
-                    label={t('projects.projectNumber')}
-                    name="projectNumber"
-                    value={formData.projectNumber}
-                    onChange={handleChange}
-                    placeholder="Leave empty for auto-generation"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('projects.autoGenerateNote')}
-                  </p>
-                </div>
+                <FormField span>
+                  <div className="p-4 bg-gradient-to-br from-secondary-50 to-secondary-100/50 rounded-xl border-2 border-dashed border-secondary-300 hover:border-primary-300 transition-colors">
+                    <Input
+                      label={t('projects.projectNumber')}
+                      name="projectNumber"
+                      value={formData.projectNumber}
+                      onChange={handleChange}
+                      placeholder={t('projects.autoGeneratePlaceholder') || 'Leave empty for auto-generation'}
+                    />
+                    <p className="mt-2 flex items-center gap-1.5 text-xs text-secondary-500">
+                      <InformationCircleIcon className="w-4 h-4 flex-shrink-0" />
+                      {t('projects.autoGenerateNote') || 'If left empty, a unique project number will be generated automatically'}
+                    </p>
+                  </div>
+                </FormField>
               )}
-            <Select
-              label={t('projects.projectType') || 'Project Type'}
-              name="projectType"
-              value={formData.projectType || PROJECT_TYPES.WELL}
-              onChange={handleChange}
-              options={projectTypeOptions}
-              required
-            />
-            <Input
-              label={t('projects.projectName')}
-              name="projectName"
-              value={formData.projectName}
-              onChange={handleChange}
-              required
-            />
-            <Textarea
-              label={t('projects.notes')}
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={3}
-              className="md:col-span-2"
-            />
+
+            <FormField>
+              <Select
+                label={t('projects.projectType') || 'Project Type'}
+                name="projectType"
+                value={formData.projectType || PROJECT_TYPES.WELL}
+                onChange={handleChange}
+                options={projectTypeOptions}
+                required
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.projectName')}
+                name="projectName"
+                value={formData.projectName}
+                onChange={handleChange}
+                required
+                placeholder={t('projects.projectNamePlaceholder') || 'Enter project name...'}
+              />
+            </FormField>
+
+            <FormField span>
+              <Textarea
+                label={t('projects.description')}
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={3}
+                placeholder={t('projects.descriptionPlaceholder') || 'Enter a detailed description of the project...'}
+              />
+            </FormField>
           </div>
-        </Card>
+        </SectionCard>
 
         {/* Location */}
-        <Card title={t('projects.location')}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <SearchableSelect
-              label={t('projects.country')}
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              options={countryOptions}
-              placeholder={t('common.selectOption') || 'Select country...'}
-              required
-            />
-            <Input
-              label={t('projects.region')}
-              name="region"
-              value={formData.region}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.city')}
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.address')}
-              name="locationAddress"
-              value={formData.locationAddress}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.latitude')}
-              name="locationLatitude"
-              type="number"
-              step="any"
-              value={formData.locationLatitude}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.longitude')}
-              name="locationLongitude"
-              type="number"
-              step="any"
-              value={formData.locationLongitude}
-              onChange={handleChange}
-            />
+        <SectionCard
+          icon={MapPinIcon}
+          title={t('projects.location')}
+          subtitle={t('projects.locationDesc') || 'Geographic information and address details'}
+          variant="info"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <FormField>
+              <SearchableSelect
+                label={t('projects.country')}
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                options={countryOptions}
+                placeholder={t('common.selectOption') || 'Select country...'}
+                required
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.region')}
+                name="region"
+                value={formData.region}
+                onChange={handleChange}
+                placeholder={t('projects.regionPlaceholder') || 'State, province, or region...'}
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.city')}
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder={t('projects.cityPlaceholder') || 'City or town name...'}
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.address')}
+                name="locationAddress"
+                value={formData.locationAddress}
+                onChange={handleChange}
+                placeholder={t('projects.addressPlaceholder') || 'Street address...'}
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.latitude')}
+                name="locationLatitude"
+                type="number"
+                step="any"
+                value={formData.locationLatitude}
+                onChange={handleChange}
+                placeholder="e.g., 24.7136"
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.longitude')}
+                name="locationLongitude"
+                type="number"
+                step="any"
+                value={formData.locationLongitude}
+                onChange={handleChange}
+                placeholder="e.g., 46.6753"
+              />
+            </FormField>
           </div>
-        </Card>
+        </SectionCard>
 
         {/* Project Management */}
-        <Card title={t('projects.projectManagement')}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label={t('projects.status')}
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              options={statusOptions}
-              required
-            />
-            <Select
-              label="Priority"
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              options={priorityOptions}
-            />
-            <Select
-              label={t('projects.contractor')}
-              name="contractor"
-              value={formData.contractor}
-              onChange={handleChange}
-              options={contractorOptions}
-            />
-            <Select
-              label={t('projects.projectManager')}
-              name="projectManager"
-              value={formData.projectManager}
-              onChange={handleChange}
-              options={managerOptions}
-            />
-            <Input
-              label={t('projects.progress') + ' (%)'}
-              name="progress"
-              type="number"
-              min="0"
-              max="100"
-              value={formData.progress}
-              onChange={handleChange}
-            />
+        <SectionCard
+          icon={CogIcon}
+          title={t('projects.projectManagement')}
+          subtitle={t('projects.projectManagementDesc') || 'Status, team assignment and progress tracking'}
+          variant="warning"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <FormField>
+              <Select
+                label={t('projects.status')}
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                options={statusOptions}
+                required
+              />
+            </FormField>
+
+            <FormField>
+              <Select
+                label={t('projects.priority') || 'Priority'}
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                options={priorityOptions}
+              />
+            </FormField>
+
+            <FormField>
+              <Select
+                label={t('projects.contractor')}
+                name="contractor"
+                value={formData.contractor}
+                onChange={handleChange}
+                options={contractorOptions}
+              />
+            </FormField>
+
+            <FormField>
+              <Select
+                label={t('projects.projectManager')}
+                name="projectManager"
+                value={formData.projectManager}
+                onChange={handleChange}
+                options={managerOptions}
+              />
+            </FormField>
+
+            <FormField span>
+              <div className="p-5 bg-gradient-to-br from-primary-50/80 to-primary-100/50 rounded-xl border-2 border-primary-200 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="flex items-center gap-2 text-sm font-bold text-secondary-700">
+                    <ChartBarIcon className="w-5 h-5 text-primary-500" />
+                    {t('projects.progress')}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl font-extrabold text-primary-600">{formData.progress}</span>
+                    <span className="text-lg font-bold text-primary-400">%</span>
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="range"
+                    name="progress"
+                    min="0"
+                    max="100"
+                    value={formData.progress}
+                    onChange={handleChange}
+                    className="w-full h-4 bg-white rounded-full appearance-none cursor-pointer 
+                      shadow-inner border-2 border-primary-200
+                      [&::-webkit-slider-thumb]:appearance-none
+                      [&::-webkit-slider-thumb]:w-6
+                      [&::-webkit-slider-thumb]:h-6
+                      [&::-webkit-slider-thumb]:rounded-full
+                      [&::-webkit-slider-thumb]:bg-gradient-to-br
+                      [&::-webkit-slider-thumb]:from-primary-400
+                      [&::-webkit-slider-thumb]:to-primary-600
+                      [&::-webkit-slider-thumb]:shadow-lg
+                      [&::-webkit-slider-thumb]:border-2
+                      [&::-webkit-slider-thumb]:border-white
+                      [&::-webkit-slider-thumb]:cursor-pointer
+                      [&::-webkit-slider-thumb]:transition-transform
+                      [&::-webkit-slider-thumb]:hover:scale-110"
+                  />
+                </div>
+                <div className="flex justify-between text-xs font-medium text-secondary-400 mt-3 px-1">
+                  <span>0%</span>
+                  <span>25%</span>
+                  <span>50%</span>
+                  <span>75%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+            </FormField>
           </div>
-        </Card>
+        </SectionCard>
 
         {/* Budget & Timeline */}
-        <Card title={t('projects.budgetTimeline')}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex gap-2">
-              <Input
-                label={t('projects.budget')}
-                name="budgetAmount"
-                type="number"
-                step="0.01"
-                value={formData.budgetAmount}
-                onChange={handleChange}
-                className="flex-1"
-              />
-              <Select
-                label={t('projects.currency')}
-                name="budgetCurrency"
-                value={formData.budgetCurrency}
-                onChange={handleChange}
-                options={[
-                  { value: 'USD', label: 'USD' },
-                  { value: 'EUR', label: 'EUR' },
-                  { value: 'SAR', label: 'SAR' },
-                ]}
-                className="w-24"
-              />
-            </div>
+        <SectionCard
+          icon={CurrencyDollarIcon}
+          title={t('projects.budgetTimeline')}
+          subtitle={t('projects.budgetTimelineDesc') || 'Financial allocation and project schedule'}
+          variant="success"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <FormField>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Input
+                    label={t('projects.budget')}
+                    name="budgetAmount"
+                    type="number"
+                    step="0.01"
+                    value={formData.budgetAmount}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="w-28">
+                  <Select
+                    label={t('projects.currency')}
+                    name="budgetCurrency"
+                    value={formData.budgetCurrency}
+                    onChange={handleChange}
+                    options={[
+                      { value: 'USD', label: 'USD' },
+                      { value: 'EUR', label: 'EUR' },
+                      { value: 'SAR', label: 'SAR' },
+                    ]}
+                  />
+                </div>
+              </div>
+            </FormField>
+
             <div></div>
-            <Input
-              label={t('projects.startDate')}
-              name="startDate"
-              type="date"
-              value={formData.startDate}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.expectedEndDate')}
-              name="expectedEndDate"
-              type="date"
-              value={formData.expectedEndDate}
-              onChange={handleChange}
-            />
+
+            <FormField>
+              <Input
+                label={t('projects.startDate')}
+                name="startDate"
+                type="date"
+                value={formData.startDate}
+                onChange={handleChange}
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.expectedEndDate')}
+                name="expectedEndDate"
+                type="date"
+                value={formData.expectedEndDate}
+                onChange={handleChange}
+              />
+            </FormField>
           </div>
-        </Card>
+        </SectionCard>
 
-        {/* Well Details - Only show for well projects */}
+        {/* Well Details */}
         {formData.projectType === PROJECT_TYPES.WELL && (
-          <Card title={t('projects.wellSpecifications')}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label={t('projects.depth')}
-                name="wellDepth"
-                type="number"
-                step="0.1"
-                value={formData.wellDepth}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.diameter')}
-                name="wellDiameter"
-                type="number"
-                step="0.1"
-                value={formData.wellDiameter}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.capacity')}
-                name="wellCapacity"
-                type="number"
-                value={formData.wellCapacity}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.waterQuality')}
-                name="wellWaterQuality"
-                value={formData.wellWaterQuality}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.pumpType')}
-                name="wellPumpType"
-                value={formData.wellPumpType}
-                onChange={handleChange}
-              />
+          <SectionCard
+            icon={WrenchScrewdriverIcon}
+            title={t('projects.wellSpecifications')}
+            subtitle={t('projects.wellSpecificationsDesc') || 'Technical parameters for well construction'}
+            variant="info"
+          >
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <SpecTile label={t('projects.depth')} variant="info">
+                <Input
+                  name="wellDepth"
+                  type="number"
+                  step="0.1"
+                  value={formData.wellDepth}
+                  onChange={handleChange}
+                  placeholder="meters"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.diameter')} variant="primary">
+                <Input
+                  name="wellDiameter"
+                  type="number"
+                  step="0.1"
+                  value={formData.wellDiameter}
+                  onChange={handleChange}
+                  placeholder="cm"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.capacity')} variant="success">
+                <Input
+                  name="wellCapacity"
+                  type="number"
+                  value={formData.wellCapacity}
+                  onChange={handleChange}
+                  placeholder="L/hour"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.waterQuality')} variant="warning">
+                <Input
+                  name="wellWaterQuality"
+                  value={formData.wellWaterQuality}
+                  onChange={handleChange}
+                  placeholder="e.g., Fresh"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.pumpType')} variant="default">
+                <Input
+                  name="wellPumpType"
+                  value={formData.wellPumpType}
+                  onChange={handleChange}
+                  placeholder="e.g., Solar"
+                  className="bg-white/80"
+                />
+              </SpecTile>
             </div>
-          </Card>
+          </SectionCard>
         )}
 
-        {/* Mosque Details - Only show for mosque projects */}
+        {/* Mosque Details */}
         {formData.projectType === PROJECT_TYPES.MOSQUE && (
-          <Card title={t('projects.mosqueSpecifications') || 'Mosque Specifications'}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label={t('projects.mosqueArea') || 'Area (m²)'}
-                name="mosqueArea"
-                type="number"
-                step="0.1"
-                value={formData.mosqueArea}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.mosqueCapacity') || 'Capacity (Worshippers)'}
-                name="mosqueCapacity"
-                type="number"
-                value={formData.mosqueCapacity}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.mosqueMinarets') || 'Number of Minarets'}
-                name="mosqueMinarets"
-                type="number"
-                value={formData.mosqueMinarets}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.mosqueDomes') || 'Number of Domes'}
-                name="mosqueDomes"
-                type="number"
-                value={formData.mosqueDomes}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.mosquePrayerHalls') || 'Prayer Halls'}
-                name="mosquePrayerHalls"
-                type="number"
-                value={formData.mosquePrayerHalls}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.mosqueAblutionFacilities') || 'Ablution Facilities'}
-                name="mosqueAblutionFacilities"
-                type="number"
-                value={formData.mosqueAblutionFacilities}
-                onChange={handleChange}
-              />
-              <Input
-                label={t('projects.mosqueParkingSpaces') || 'Parking Spaces'}
-                name="mosqueParkingSpaces"
-                type="number"
-                value={formData.mosqueParkingSpaces}
-                onChange={handleChange}
-              />
+          <SectionCard
+            icon={BuildingOfficeIcon}
+            title={t('projects.mosqueSpecifications') || 'Mosque Specifications'}
+            subtitle={t('projects.mosqueSpecificationsDesc') || 'Facility specifications and capacity details'}
+            variant="warning"
+          >
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <SpecTile label={t('projects.mosqueArea') || 'Area (m²)'} variant="warning">
+                <Input
+                  name="mosqueArea"
+                  type="number"
+                  step="0.1"
+                  value={formData.mosqueArea}
+                  onChange={handleChange}
+                  placeholder="m²"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.mosqueCapacity') || 'Capacity'} variant="success">
+                <Input
+                  name="mosqueCapacity"
+                  type="number"
+                  value={formData.mosqueCapacity}
+                  onChange={handleChange}
+                  placeholder="people"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.mosqueMinarets') || 'Minarets'} variant="primary">
+                <Input
+                  name="mosqueMinarets"
+                  type="number"
+                  value={formData.mosqueMinarets}
+                  onChange={handleChange}
+                  placeholder="count"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.mosqueDomes') || 'Domes'} variant="info">
+                <Input
+                  name="mosqueDomes"
+                  type="number"
+                  value={formData.mosqueDomes}
+                  onChange={handleChange}
+                  placeholder="count"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.mosquePrayerHalls') || 'Prayer Halls'} variant="default">
+                <Input
+                  name="mosquePrayerHalls"
+                  type="number"
+                  value={formData.mosquePrayerHalls}
+                  onChange={handleChange}
+                  placeholder="count"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.mosqueAblutionFacilities') || 'Ablution'} variant="info">
+                <Input
+                  name="mosqueAblutionFacilities"
+                  type="number"
+                  value={formData.mosqueAblutionFacilities}
+                  onChange={handleChange}
+                  placeholder="count"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.mosqueParkingSpaces') || 'Parking'} variant="success">
+                <Input
+                  name="mosqueParkingSpaces"
+                  type="number"
+                  value={formData.mosqueParkingSpaces}
+                  onChange={handleChange}
+                  placeholder="spaces"
+                  className="bg-white/80"
+                />
+              </SpecTile>
             </div>
-          </Card>
+          </SectionCard>
         )}
 
-        {/* Other Details - Only show for other project types */}
+        {/* Other Details */}
         {formData.projectType === PROJECT_TYPES.OTHER && (
-          <Card title={t('projects.otherSpecifications') || 'Project Specifications'}>
-            <Textarea
-              label={t('projects.otherDetails') || 'Project Details (JSON format)'}
-              name="otherDetails"
-              value={formData.otherDetails}
-              onChange={handleChange}
-              rows={8}
-              placeholder='{"field1": "value1", "field2": "value2"}'
-            />
-            <p className="mt-2 text-xs text-gray-500">
-              {t('projects.otherDetailsNote') || 'Enter project details in JSON format. Example: {"size": "100m²", "rooms": 5}'}
-            </p>
-          </Card>
+          <SectionCard
+            icon={ClipboardDocumentListIcon}
+            title={t('projects.otherSpecifications') || 'Project Specifications'}
+            subtitle={t('projects.otherSpecificationsDesc') || 'Custom project details in JSON format'}
+            variant="purple"
+          >
+            <div className="p-4 bg-gradient-to-br from-purple-50/80 to-purple-100/50 rounded-xl border-2 border-purple-200">
+              <Textarea
+                label={t('projects.otherDetails') || 'Project Details (JSON format)'}
+                name="otherDetails"
+                value={formData.otherDetails}
+                onChange={handleChange}
+                rows={8}
+                placeholder='{"field1": "value1", "field2": "value2"}'
+                className="font-mono text-sm bg-white/80"
+              />
+              <p className="mt-3 flex items-start gap-2 text-xs text-secondary-500">
+                <InformationCircleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{t('projects.otherDetailsNote') || 'Enter project details in JSON format. Example: {"size": "100m²", "rooms": 5}'}</span>
+              </p>
+            </div>
+          </SectionCard>
         )}
 
         {/* Beneficiaries */}
-        <Card title={t('projects.beneficiaries')}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Estimated Families"
-              name="estimatedFamilies"
-              type="number"
-              value={formData.estimatedFamilies}
-              onChange={handleChange}
-            />
-            <Input
-              label="Estimated People"
-              name="estimatedPeople"
-              type="number"
-              value={formData.estimatedPeople}
-              onChange={handleChange}
-            />
-          </div>
-        </Card>
+        <SectionCard
+          icon={UserGroupIcon}
+          title={t('projects.beneficiaries')}
+          subtitle={t('projects.beneficiariesDesc') || 'Estimated impact and population served'}
+          variant="success"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <FormField>
+              <div className="group p-5 bg-gradient-to-br from-success-50 to-success-100/50 rounded-xl border-2 border-success-200 
+                hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-success-400 to-success-600 
+                    flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <UserGroupIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <label className="text-sm font-bold text-secondary-700">
+                    {t('projects.estimatedFamilies') || 'Estimated Families'}
+                  </label>
+                </div>
+                <Input
+                  name="estimatedFamilies"
+                  type="number"
+                  value={formData.estimatedFamilies}
+                  onChange={handleChange}
+                  placeholder="Number of families"
+                  className="bg-white/80"
+                />
+              </div>
+            </FormField>
 
-        {/* client Information */}
-        <Card title={t('projects.clientInformation')}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label={t('projects.clientName')}
-              name="clientName"
-              value={formData.clientName}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.clientEmail')}
-              name="clientEmail"
-              type="email"
-              value={formData.clientEmail}
-              onChange={handleChange}
-            />
-            <Input
-              label={t('projects.clientPhone')}
-              name="clientPhone"
-              value={formData.clientPhone}
-              onChange={handleChange}
-            />
+            <FormField>
+              <div className="group p-5 bg-gradient-to-br from-info-50 to-info-100/50 rounded-xl border-2 border-info-200 
+                hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-info-400 to-info-600 
+                    flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <UserIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <label className="text-sm font-bold text-secondary-700">
+                    {t('projects.estimatedPeople') || 'Estimated People'}
+                  </label>
+                </div>
+                <Input
+                  name="estimatedPeople"
+                  type="number"
+                  value={formData.estimatedPeople}
+                  onChange={handleChange}
+                  placeholder="Number of individuals"
+                  className="bg-white/80"
+                />
+              </div>
+            </FormField>
           </div>
-        </Card>
+        </SectionCard>
+
+        {/* Client Information */}
+        <SectionCard
+          icon={UserIcon}
+          title={t('projects.clientInformation')}
+          subtitle={t('projects.clientInformationDesc') || 'Donor or client contact details'}
+          variant="default"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <FormField>
+              <Input
+                label={t('projects.clientName')}
+                name="clientName"
+                value={formData.clientName}
+                onChange={handleChange}
+                placeholder={t('projects.clientNamePlaceholder') || 'Full name...'}
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.clientEmail')}
+                name="clientEmail"
+                type="email"
+                value={formData.clientEmail}
+                onChange={handleChange}
+                placeholder="email@example.com"
+              />
+            </FormField>
+
+            <FormField>
+              <Input
+                label={t('projects.clientPhone')}
+                name="clientPhone"
+                value={formData.clientPhone}
+                onChange={handleChange}
+                placeholder="+1 (555) 000-0000"
+              />
+            </FormField>
+          </div>
+        </SectionCard>
 
         {/* Notes */}
-        <Card title={t('projects.notes')}>
-          <Textarea
-            label={t('projects.additionalNotes')}
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            rows={4}
-          />
-        </Card>
+        <SectionCard
+          icon={TagIcon}
+          title={t('projects.notes')}
+          subtitle={t('projects.notesDesc') || 'Additional information and internal notes'}
+          variant="default"
+        >
+          <FormField>
+            <Textarea
+              label={t('projects.additionalNotes')}
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              rows={4}
+              placeholder={t('projects.notesPlaceholder') || 'Enter any additional notes, special requirements, or important information...'}
+            />
+          </FormField>
+        </SectionCard>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => navigate('/projects')}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" loading={loading}>
-            {isEditMode ? t('common.update') : t('common.create')}
-          </Button>
+        {/* ==================== STICKY ACTIONS BAR ==================== */}
+        <div className="sticky bottom-0 z-20 -mx-4 px-4 py-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 p-4 bg-white/95 backdrop-blur-xl rounded-2xl 
+              border-2 border-secondary-200 shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.1)]">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => navigate('/projects')}
+                className="sm:w-auto w-full hover:shadow-md"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                size="lg"
+                loading={loading}
+                icon={isEditMode ? CheckCircleIcon : SparklesIcon}
+                className="sm:w-auto w-full bg-gradient-to-r from-primary-500 to-primary-600 
+                  shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 
+                  hover:-translate-y-0.5 transition-all duration-300"
+              >
+                {isEditMode ? t('common.update') : t('common.create')} {t('projects.project')}
+              </Button>
+            </div>
+          </div>
         </div>
       </form>
     </div>
