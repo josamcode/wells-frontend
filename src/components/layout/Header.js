@@ -22,8 +22,7 @@ const Header = memo(({ toggleSidebar }) => {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 60000);
-    return () => clearInterval(interval);
+    // Removed automatic refresh interval
   }, []);
 
   // Close profile menu when clicking outside

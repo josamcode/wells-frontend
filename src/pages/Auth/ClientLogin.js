@@ -5,16 +5,19 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import { GlobeAltIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import { GlobeAltIcon, EnvelopeIcon, KeyIcon } from '@heroicons/react/24/outline';
 
 const ClientLogin = memo(() => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { clientLogin } = useAuth();
+  const { clientSendOTP, clientLogin } = useAuth();
   const { language, toggleLanguage } = useLanguage();
-  const [formData, setFormData] = useState({ phone: '' });
+  const [formData, setFormData] = useState({ email: '', otp: '' });
   const [loading, setLoading] = useState(false);
+  const [sendingOTP, setSendingOTP] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
   const [errors, setErrors] = useState({});
+  const [countdown, setCountdown] = useState(0);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -25,32 +28,72 @@ const ClientLogin = memo(() => {
     }
   }, [errors]);
 
-  const validateForm = useCallback(() => {
+  const validateEmail = useCallback(() => {
     const newErrors = {};
-
-    if (!formData.phone || !formData.phone.trim()) {
-      newErrors.phone = t('auth.phoneRequired') || 'Phone number is required';
+    if (!formData.email || !formData.email.trim()) {
+      newErrors.email = t('auth.emailRequired') || 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = t('auth.invalidEmail') || 'Invalid email format';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, t]);
+  }, [formData.email, t]);
+
+  const validateOTP = useCallback(() => {
+    const newErrors = {};
+    if (!formData.otp || !formData.otp.trim()) {
+      newErrors.otp = t('auth.otpRequired') || 'OTP is required';
+    } else if (!/^\d{6}$/.test(formData.otp.trim())) {
+      newErrors.otp = t('auth.invalidOTP') || 'OTP must be 6 digits';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData.otp, t]);
+
+  const handleSendOTP = useCallback(async (e) => {
+    e.preventDefault();
+
+    if (!validateEmail()) {
+      return;
+    }
+
+    setSendingOTP(true);
+    setErrors({}); // Clear previous errors
+    const success = await clientSendOTP(formData.email.trim());
+    if (success) {
+      setOtpSent(true);
+      // Start countdown (60 seconds)
+      setCountdown(60);
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      // Set error on email field if OTP sending failed
+      setErrors(prev => ({ ...prev, email: t('auth.emailNotFound') || 'No projects found for this email address' }));
+    }
+    setSendingOTP(false);
+  }, [formData.email, clientSendOTP, validateEmail, t]);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
 
-    // Validate form before submitting
-    if (!validateForm()) {
+    if (!validateOTP()) {
       return;
     }
 
     setLoading(true);
-    const success = await clientLogin(formData.phone.trim());
+    const success = await clientLogin(formData.email.trim(), formData.otp.trim());
     if (success) {
       navigate('/my-projects');
     }
     setLoading(false);
-  }, [formData, clientLogin, navigate, validateForm]);
+  }, [formData, clientLogin, navigate, validateOTP]);
 
   return (
     <div className="min-h-screen flex">
@@ -89,33 +132,92 @@ const ClientLogin = memo(() => {
               {t('auth.clientLogin') || 'Client Login'}
             </h2>
             <p className="mt-2 text-secondary-500">
-              {t('auth.clientLoginDescription') || 'Enter your phone number to access your projects'}
+              {otpSent
+                ? t('auth.enterOTP') || 'Enter the OTP sent to your email'
+                : t('auth.clientLoginDescription') || 'Enter your email to receive a verification code'}
             </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={otpSent ? handleSubmit : handleSendOTP} className="space-y-5">
             <Input
-              label={t('auth.phone') || 'Phone Number'}
-              type="tel"
-              name="phone"
-              value={formData.phone}
+              label={t('auth.email') || 'Email'}
+              type="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
               required
-              autoFocus
-              placeholder={t('auth.phonePlaceholder') || '+1234567890'}
-              icon={PhoneIcon}
-              error={errors.phone}
+              autoFocus={!otpSent}
+              placeholder={t('auth.emailPlaceholder') || 'your.email@example.com'}
+              icon={EnvelopeIcon}
+              error={errors.email}
+              disabled={otpSent}
             />
+
+            {otpSent && (
+              <>
+                <Input
+                  label={t('auth.otp') || 'Verification Code'}
+                  type="text"
+                  name="otp"
+                  value={formData.otp}
+                  onChange={handleChange}
+                  required
+                  autoFocus
+                  placeholder="000000"
+                  icon={KeyIcon}
+                  error={errors.otp}
+                  maxLength={6}
+                  pattern="[0-9]*"
+                  inputMode="numeric"
+                />
+                {countdown > 0 && (
+                  <p className="text-sm text-secondary-500 text-center">
+                    {t('auth.resendOTPIn') || 'Resend OTP in'} {countdown}s
+                  </p>
+                )}
+              </>
+            )}
 
             <Button
               type="submit"
               fullWidth
-              loading={loading}
+              loading={otpSent ? loading : sendingOTP}
               size="lg"
             >
-              {t('auth.login')}
+              {otpSent
+                ? t('auth.login') || 'Login'
+                : t('auth.receiveOTP') || 'Receive OTP'}
             </Button>
+
+            {otpSent && countdown === 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                fullWidth
+                onClick={handleSendOTP}
+                disabled={sendingOTP}
+                size="lg"
+              >
+                {t('auth.resendOTP') || 'Resend OTP'}
+              </Button>
+            )}
+
+            {otpSent && (
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
+                onClick={() => {
+                  setOtpSent(false);
+                  setFormData(prev => ({ ...prev, otp: '' }));
+                  setCountdown(0);
+                }}
+                size="sm"
+              >
+                {t('auth.changeEmail') || 'Change Email'}
+              </Button>
+            )}
           </form>
 
           {/* Link to regular login */}

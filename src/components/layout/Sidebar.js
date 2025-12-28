@@ -29,8 +29,7 @@ const Sidebar = memo(({ isOpen, closeSidebar, isCollapsed, toggleCollapse }) => 
       }
     };
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 60000);
-    return () => clearInterval(interval);
+    // Removed automatic refresh interval
   }, []);
 
   const navigation = useMemo(() => [

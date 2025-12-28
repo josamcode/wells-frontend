@@ -14,6 +14,7 @@ export const projectsAPI = {
     axios.post(`/projects/${id}/review`, { reviewStatus, reviewNotes }),
   evaluate: (id, evaluationData) =>
     axios.post(`/projects/${id}/evaluate`, evaluationData),
+  clientEvaluate: (id, data) => axios.post(`/projects/${id}/client-evaluate`, data),
   uploadMedia: (projectId, file, name) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -39,5 +40,14 @@ export const projectsAPI = {
     });
   },
   deleteMedia: (projectId, mediaId) => axios.delete(`/projects/${projectId}/media/${mediaId}`),
+  uploadContract: (projectId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axios.post(`/projects/${projectId}/contract`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  deleteContract: (projectId) => axios.delete(`/projects/${projectId}/contract`),
+  getContract: (projectId) => axios.get(`/projects/${projectId}/contract`, { responseType: 'blob' }),
 };
 

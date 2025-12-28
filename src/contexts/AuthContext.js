@@ -68,9 +68,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const clientLogin = async (phone) => {
+  const clientSendOTP = async (email) => {
     try {
-      const response = await authAPI.clientLogin(phone);
+      await authAPI.clientSendOTP(email);
+      toast.success(i18n.t('auth.otpSent') || 'OTP sent to your email');
+      return true;
+    } catch (error) {
+      const message = error.response?.data?.message || i18n.t('auth.failedToSendOTP') || 'Failed to send OTP';
+      toast.error(message);
+      return false;
+    }
+  };
+
+  const clientLogin = async (email, otp) => {
+    try {
+      const response = await authAPI.clientLogin(email, otp);
       const { user, token } = response.data.data;
 
       setUser(user);
@@ -126,6 +138,7 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     login,
+    clientSendOTP,
     clientLogin,
     logout,
     updateProfile,

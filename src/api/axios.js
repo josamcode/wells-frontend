@@ -34,7 +34,10 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     // Handle 401 - Unauthorized
-    if (error.response?.status === 401) {
+    // Skip auto-logout for blob requests (they handle errors themselves)
+    const isBlobRequest = error.config?.responseType === 'blob';
+    
+    if (error.response?.status === 401 && !isBlobRequest) {
       // Clear local storage
       localStorage.removeItem('token');
       localStorage.removeItem('user');

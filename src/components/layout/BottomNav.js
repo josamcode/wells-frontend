@@ -50,8 +50,7 @@ const BottomNav = memo(() => {
       }
     };
     fetchCounts();
-    const interval = setInterval(fetchCounts, 60000);
-    return () => clearInterval(interval);
+    // Removed automatic refresh interval
   }, []);
 
   // Close menu when clicking outside
