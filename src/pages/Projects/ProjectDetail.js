@@ -1926,7 +1926,7 @@ const ProjectDetail = memo(() => {
             </div>
           </HoverCard>
 
-          <HoverCard>
+          {/* <HoverCard>
             <div className="px-6 py-5 border-b border-secondary-100 bg-gradient-to-r from-primary-50/50 to-transparent">
               <SectionHeader
                 icon={DocumentTextIcon}
@@ -1986,7 +1986,7 @@ const ProjectDetail = memo(() => {
                 </div>
               )}
             </div>
-          </HoverCard>
+          </HoverCard> */}
 
           {/* Beneficiaries Card */}
           {project.beneficiaries && (project.beneficiaries.estimatedFamilies || project.beneficiaries.estimatedPeople) && (
