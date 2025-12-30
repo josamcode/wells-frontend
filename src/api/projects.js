@@ -1,7 +1,15 @@
 import axios from './axios';
 
 export const projectsAPI = {
-  getAll: (params) => axios.get('/projects', { params }),
+  getAll: (params, options = {}) => {
+    // Remove page and limit from URL params if they exist
+    const urlParams = { ...params };
+    if (options.excludePageLimit) {
+      delete urlParams.page;
+      delete urlParams.limit;
+    }
+    return axios.get('/projects', { params: urlParams });
+  },
   getById: (id) => axios.get(`/projects/${id}`),
   getList: () => axios.get('/projects/list'),
   getStats: () => axios.get('/projects/stats'),

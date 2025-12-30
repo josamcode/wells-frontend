@@ -7,6 +7,7 @@ import Card from '../../components/common/Card';
 import { StatsGridSkeleton, CardSkeleton } from '../../components/common/Loading';
 import Badge from '../../components/common/Badge';
 import { formatDate } from '../../utils/helpers';
+import { PROJECT_TYPES } from '../../utils/constants';
 import {
   FolderIcon,
   CheckCircleIcon,
@@ -15,6 +16,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowRightIcon,
   UserIcon,
+  BuildingOfficeIcon,
 } from '@heroicons/react/24/outline';
 import {
   BarChart,
@@ -279,6 +281,60 @@ const Dashboard = memo(() => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Quick Actions - Project Type Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Link
+          to="/projects?projectType=well"
+          className="group relative overflow-hidden rounded-2xl border-2 border-primary-200 bg-gradient-to-br from-primary-50 via-white to-primary-100/50 transition-all duration-300 ease-out shadow-[0_4px_16px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-3 hover:scale-[1.02] hover:shadow-[0_25px_50px_-12px_rgba(59,130,246,0.3)]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 group-hover:shadow-xl overflow-hidden">
+                <img src="/w.webp" alt="Well" className="w-full h-full object-cover" />
+              </div>
+              <ArrowRightIcon className="w-6 h-6 text-primary-600 group-hover:translate-x-2 transition-transform" />
+            </div>
+            <h3 className="text-xl font-bold text-primary-600 mb-2">{t('projects.types.well') || 'Wells'}</h3>
+            <p className="text-sm text-secondary-600">{t('dashboard.viewWellsProjects') || 'View all well projects'}</p>
+          </div>
+        </Link>
+
+        <Link
+          to="/projects?projectType=mosque"
+          className="group relative overflow-hidden rounded-2xl border-2 border-warning-200 bg-gradient-to-br from-warning-50 via-white to-warning-100/50 transition-all duration-300 ease-out shadow-[0_4px_16px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-3 hover:scale-[1.02] hover:shadow-[0_25px_50px_-12px_rgba(234,179,8,0.3)]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-warning-400 to-warning-600 flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 group-hover:shadow-xl overflow-hidden">
+                <img src="/m.webp" alt="Mosque" className="w-full h-full object-cover" />
+              </div>
+              <ArrowRightIcon className="w-6 h-6 text-warning-600 group-hover:translate-x-2 transition-transform" />
+            </div>
+            <h3 className="text-xl font-bold text-warning-600 mb-2">{t('projects.types.mosque') || 'Mosques'}</h3>
+            <p className="text-sm text-secondary-600">{t('dashboard.viewMosquesProjects') || 'View all mosque projects'}</p>
+          </div>
+        </Link>
+
+        <Link
+          to="/projects?projectType=educational_center"
+          className="group relative overflow-hidden rounded-2xl border-2 border-info-200 bg-gradient-to-br from-info-50 via-white to-info-100/50 transition-all duration-300 ease-out shadow-[0_4px_16px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-3 hover:scale-[1.02] hover:shadow-[0_25px_50px_-12px_rgba(6,182,212,0.3)]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-info-400 to-info-600 flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 group-hover:shadow-xl overflow-hidden">
+                <img src="/e.jpg" alt="Educational Center" className="w-full h-full object-cover" />
+              </div>
+              <ArrowRightIcon className="w-6 h-6 text-info-600 group-hover:translate-x-2 transition-transform" />
+            </div>
+            <h3 className="text-xl font-bold text-info-600 mb-2">{t('projects.types.educational_center') || 'Educational Centers'}</h3>
+            <p className="text-sm text-secondary-600">{t('dashboard.viewEducationalCentersProjects') || 'View all educational center projects'}</p>
+          </div>
+        </Link>
       </div>
 
       {/* Stats Grid */}

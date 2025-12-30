@@ -9,6 +9,7 @@ export const ROLES = {
 export const PROJECT_TYPES = {
   WELL: 'well',
   MOSQUE: 'mosque',
+  EDUCATIONAL_CENTER: 'educational_center',
   OTHER: 'other',
 };
 

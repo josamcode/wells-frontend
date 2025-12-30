@@ -335,14 +335,14 @@ const ProjectDetail = memo(() => {
     }
   }, [id, navigate, t]);
 
-  const fetchReports = useCallback(async () => {
-    try {
-      const response = await reportsAPI.getAll({ project: id, limit: 100 });
-      setReports(response.data.data.reports);
-    } catch (error) {
-      // Silent fail
-    }
-  }, [id]);
+  // const fetchReports = useCallback(async () => {
+  //   try {
+  //     const response = await reportsAPI.getAll({ project: id, limit: 100 });
+  //     setReports(response.data.data.reports);
+  //   } catch (error) {
+  //     // Silent fail
+  //   }
+  // }, [id]);
 
   const fetchPayments = useCallback(async () => {
     const userIsSuperAdmin = hasRole('super_admin');
@@ -766,8 +766,8 @@ const ProjectDetail = memo(() => {
 
   useEffect(() => {
     fetchProject();
-    fetchReports();
-  }, [fetchProject, fetchReports]);
+    // fetchReports();
+  }, [fetchProject]);
 
   useEffect(() => {
     fetchPayments();
@@ -822,26 +822,26 @@ const ProjectDetail = memo(() => {
   const allAttachments = [];
   const allGoogleDriveUrls = [];
 
-  reports.forEach((report) => {
-    if (report.attachments && report.attachments.length > 0) {
-      report.attachments.forEach((attachment) => {
-        allAttachments.push({
-          ...attachment,
-          reportId: report._id,
-          reportTitle: language === 'ar' && report.titleAr ? report.titleAr : report.title,
-          reportNumber: report.reportNumber,
-        });
-      });
-    }
-    if (report.googleDriveUrl) {
-      allGoogleDriveUrls.push({
-        url: report.googleDriveUrl,
-        reportId: report._id,
-        reportTitle: language === 'ar' && report.titleAr ? report.titleAr : report.title,
-        reportNumber: report.reportNumber,
-      });
-    }
-  });
+  // reports.forEach((report) => {
+  //   if (report.attachments && report.attachments.length > 0) {
+  //     report.attachments.forEach((attachment) => {
+  //       allAttachments.push({
+  //         ...attachment,
+  //         reportId: report._id,
+  //         reportTitle: language === 'ar' && report.titleAr ? report.titleAr : report.title,
+  //         reportNumber: report.reportNumber,
+  //       });
+  //     });
+  //   }
+  //   if (report.googleDriveUrl) {
+  //     allGoogleDriveUrls.push({
+  //       url: report.googleDriveUrl,
+  //       reportId: report._id,
+  //       reportTitle: language === 'ar' && report.titleAr ? report.titleAr : report.title,
+  //       reportNumber: report.reportNumber,
+  //     });
+  //   }
+  // });
 
   const hasMedia = allAttachments.length > 0 || allGoogleDriveUrls.length > 0 || project.googleDriveFolderUrl;
   const projectDuration = Math.ceil((new Date(project.expectedEndDate) - new Date(project.startDate)) / (1000 * 60 * 60 * 24));
@@ -1326,6 +1326,129 @@ const ProjectDetail = memo(() => {
                       </p>
                     </div>
                   )}
+                </div>
+              </div>
+            </HoverCard>
+          )}
+
+          {/* Educational Center Details */}
+          {project.projectType === PROJECT_TYPES.EDUCATIONAL_CENTER && project.educationalCenterDetails && (
+            <HoverCard>
+              <div className="px-6 py-5 border-b border-secondary-100 bg-gradient-to-r from-info-50/50 to-transparent">
+                <SectionHeader
+                  icon={BuildingOfficeIcon}
+                  title={t('projects.educationalCenterSpecifications') || 'Educational Center Specifications'}
+                  subtitle={t('projects.facilityDetails') || 'Facility details'}
+                />
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {project.educationalCenterDetails.area && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-info-50 to-info-100/30 rounded-xl border-2 border-info-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-info-600 group-hover:scale-110 transition-transform">{project.educationalCenterDetails.area}</p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterArea') || 'Area (m²)'}
+                      </p>
+                    </div>
+                  )}
+                  {project.educationalCenterDetails.totalCapacity && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-success-50 to-success-100/30 rounded-xl border-2 border-success-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-success-600 group-hover:scale-110 transition-transform">{project.educationalCenterDetails.totalCapacity}</p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterTotalCapacity') || 'Total Capacity'}
+                      </p>
+                    </div>
+                  )}
+                  {project.educationalCenterDetails.classrooms && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-primary-50 to-primary-100/30 rounded-xl border-2 border-primary-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-primary-600 group-hover:scale-110 transition-transform">{project.educationalCenterDetails.classrooms}</p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterClassrooms') || 'Classrooms'}
+                      </p>
+                    </div>
+                  )}
+                  {project.educationalCenterDetails.laboratories && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-warning-50 to-warning-100/30 rounded-xl border-2 border-warning-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-warning-600 group-hover:scale-110 transition-transform">{project.educationalCenterDetails.laboratories}</p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterLaboratories') || 'Laboratories'}
+                      </p>
+                    </div>
+                  )}
+                  {project.educationalCenterDetails.computerLabs && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-purple-50 to-purple-100/30 rounded-xl border-2 border-purple-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-purple-600 group-hover:scale-110 transition-transform">{project.educationalCenterDetails.computerLabs}</p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterComputerLabs') || 'Computer Labs'}
+                      </p>
+                    </div>
+                  )}
+                  {project.educationalCenterDetails.parkingSpaces && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/30 rounded-xl border-2 border-emerald-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-emerald-600 group-hover:scale-110 transition-transform">{project.educationalCenterDetails.parkingSpaces}</p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterParkingSpaces') || 'Parking'}
+                      </p>
+                    </div>
+                  )}
+                  {project.educationalCenterDetails.administrativeOffices && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-cyan-50 to-cyan-100/30 rounded-xl border-2 border-cyan-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-cyan-600 group-hover:scale-110 transition-transform">{project.educationalCenterDetails.administrativeOffices}</p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterAdministrativeOffices') || 'Admin Offices'}
+                      </p>
+                    </div>
+                  )}
+                  {project.educationalCenterDetails.library !== undefined && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-indigo-50 to-indigo-100/30 rounded-xl border-2 border-indigo-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-indigo-600 group-hover:scale-110 transition-transform">
+                        {project.educationalCenterDetails.library ? '✓' : '✗'}
+                      </p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterLibrary') || 'Library'}
+                      </p>
+                    </div>
+                  )}
+                  {project.educationalCenterDetails.playground !== undefined && (
+                    <div className="group text-center p-5 bg-gradient-to-br from-green-50 to-green-100/30 rounded-xl border-2 border-green-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default">
+                      <p className="text-3xl font-bold text-green-600 group-hover:scale-110 transition-transform">
+                        {project.educationalCenterDetails.playground ? '✓' : '✗'}
+                      </p>
+                      <p className="text-xs font-semibold text-secondary-600 mt-2 uppercase tracking-wider">
+                        {t('projects.educationalCenterPlayground') || 'Playground'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </HoverCard>
+          )}
+
+          {/* Custom Details - Available for all project types */}
+          {project.customDetails && Object.keys(project.customDetails).length > 0 && (
+            <HoverCard>
+              <div className="px-6 py-5 border-b border-secondary-100 bg-gradient-to-r from-purple-50/50 to-transparent">
+                <SectionHeader
+                  icon={DocumentTextIcon}
+                  title={t('projects.customDetails') || 'Custom Details'}
+                  subtitle={t('projects.additionalInformation') || 'Additional custom information'}
+                />
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(project.customDetails).map(([key, value], index) => (
+                    <div
+                      key={index}
+                      className="group p-4 bg-gradient-to-br from-purple-50 to-purple-100/30 rounded-xl border-2 border-purple-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-default"
+                    >
+                      <p className="text-xs font-semibold text-secondary-600 mb-2 uppercase tracking-wider">
+                        {key}
+                      </p>
+                      <p className="text-lg font-bold text-purple-600 group-hover:scale-105 transition-transform">
+                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </HoverCard>
@@ -1908,6 +2031,8 @@ const ProjectDetail = memo(() => {
                   <img src="/m.webp" alt="Mosque" className="w-full h-full object-cover" />
                 ) : project.projectType === PROJECT_TYPES.WELL ? (
                   <img src="/w.webp" alt="Well" className="w-full h-full object-cover" />
+                ) : project.projectType === PROJECT_TYPES.EDUCATIONAL_CENTER ? (
+                  <img src="/e.jpg" alt="Educational Center" className="w-full h-full object-cover" />
                 ) : (
                   <img src="/w.webp" alt="Well" className="w-full h-full object-cover" />
                 )}

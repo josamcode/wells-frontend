@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { projectsAPI } from '../../api/projects';
 import { usersAPI } from '../../api/users';
@@ -27,6 +27,8 @@ import {
   InformationCircleIcon,
   ChartBarIcon,
   TagIcon,
+  PlusIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 
 // ==================== REUSABLE COMPONENTS ====================
@@ -155,9 +157,13 @@ SpecTile.displayName = 'SpecTile';
 const ProjectForm = () => {
   const { t } = useTranslation();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
   const isEditMode = !!id;
+
+  // Get projectType from URL params if creating new project
+  const urlProjectType = searchParams.get('projectType');
 
   const [loading, setLoading] = useState(false);
   const [contractors, setContractors] = useState([]);
@@ -166,7 +172,7 @@ const ProjectForm = () => {
   const [originalProjectType, setOriginalProjectType] = useState(null);
   const [formData, setFormData] = useState({
     projectNumber: '',
-    projectType: 'well',
+    projectType: urlProjectType && Object.values(PROJECT_TYPES).includes(urlProjectType) ? urlProjectType : 'well',
     projectName: '',
     description: '',
     country: '',
@@ -195,7 +201,17 @@ const ProjectForm = () => {
     mosquePrayerHalls: '',
     mosqueAblutionFacilities: '',
     mosqueParkingSpaces: '',
+    educationalCenterArea: '',
+    educationalCenterTotalCapacity: '',
+    educationalCenterClassrooms: '',
+    educationalCenterLaboratories: '',
+    educationalCenterLibrary: false,
+    educationalCenterComputerLabs: '',
+    educationalCenterPlayground: false,
+    educationalCenterParkingSpaces: '',
+    educationalCenterAdministrativeOffices: '',
     otherDetails: '',
+    customDetails: [], // Array of {key: '', value: ''}
     estimatedFamilies: '',
     estimatedPeople: '',
     clientName: '',
@@ -230,6 +246,7 @@ const ProjectForm = () => {
       const response = await projectsAPI.getById(id);
       const project = response.data.data;
       setProjectCreatedBy(project.createdBy?._id || project.createdBy);
+      setOriginalProjectType(project.projectType);
       setFormData({
         projectNumber: project.projectNumber || '',
         projectType: project.projectType || 'well',
@@ -261,7 +278,17 @@ const ProjectForm = () => {
         mosquePrayerHalls: project.mosqueDetails?.prayerHalls || '',
         mosqueAblutionFacilities: project.mosqueDetails?.ablutionFacilities || '',
         mosqueParkingSpaces: project.mosqueDetails?.parkingSpaces || '',
+        educationalCenterArea: project.educationalCenterDetails?.area || '',
+        educationalCenterTotalCapacity: project.educationalCenterDetails?.totalCapacity || '',
+        educationalCenterClassrooms: project.educationalCenterDetails?.classrooms || '',
+        educationalCenterLaboratories: project.educationalCenterDetails?.laboratories || '',
+        educationalCenterLibrary: project.educationalCenterDetails?.library || false,
+        educationalCenterComputerLabs: project.educationalCenterDetails?.computerLabs || '',
+        educationalCenterPlayground: project.educationalCenterDetails?.playground || false,
+        educationalCenterParkingSpaces: project.educationalCenterDetails?.parkingSpaces || '',
+        educationalCenterAdministrativeOffices: project.educationalCenterDetails?.administrativeOffices || '',
         otherDetails: project.otherDetails ? JSON.stringify(project.otherDetails, null, 2) : '',
+        customDetails: project.customDetails ? Object.entries(project.customDetails).map(([key, value]) => ({ key, value: String(value) })) : [],
         estimatedFamilies: project.beneficiaries?.estimatedFamilies || '',
         estimatedPeople: project.beneficiaries?.estimatedPeople || '',
         clientName: project.client?.name || '',
@@ -295,6 +322,15 @@ const ProjectForm = () => {
         mosquePrayerHalls: '',
         mosqueAblutionFacilities: '',
         mosqueParkingSpaces: '',
+        educationalCenterArea: '',
+        educationalCenterTotalCapacity: '',
+        educationalCenterClassrooms: '',
+        educationalCenterLaboratories: '',
+        educationalCenterLibrary: false,
+        educationalCenterComputerLabs: '',
+        educationalCenterPlayground: false,
+        educationalCenterParkingSpaces: '',
+        educationalCenterAdministrativeOffices: '',
         otherDetails: '',
       });
     } else {
@@ -347,6 +383,8 @@ const ProjectForm = () => {
         payload.wellDetails = null;
       } else if (originalProjectType === PROJECT_TYPES.MOSQUE) {
         payload.mosqueDetails = null;
+      } else if (originalProjectType === PROJECT_TYPES.EDUCATIONAL_CENTER) {
+        payload.educationalCenterDetails = null;
       } else if (originalProjectType === PROJECT_TYPES.OTHER) {
         payload.otherDetails = null;
       }
@@ -371,11 +409,39 @@ const ProjectForm = () => {
         ablutionFacilities: parseInt(formData.mosqueAblutionFacilities) || undefined,
         parkingSpaces: parseInt(formData.mosqueParkingSpaces) || undefined,
       };
+    } else if (formData.projectType === PROJECT_TYPES.EDUCATIONAL_CENTER) {
+      payload.educationalCenterDetails = {
+        area: parseFloat(formData.educationalCenterArea) || undefined,
+        totalCapacity: parseInt(formData.educationalCenterTotalCapacity) || undefined,
+        classrooms: parseInt(formData.educationalCenterClassrooms) || undefined,
+        laboratories: parseInt(formData.educationalCenterLaboratories) || undefined,
+        library: formData.educationalCenterLibrary || false,
+        computerLabs: parseInt(formData.educationalCenterComputerLabs) || undefined,
+        playground: formData.educationalCenterPlayground || false,
+        parkingSpaces: parseInt(formData.educationalCenterParkingSpaces) || undefined,
+        administrativeOffices: parseInt(formData.educationalCenterAdministrativeOffices) || undefined,
+      };
     } else if (formData.projectType === PROJECT_TYPES.OTHER) {
       try {
         payload.otherDetails = formData.otherDetails ? JSON.parse(formData.otherDetails) : undefined;
       } catch (e) {
         payload.otherDetails = formData.otherDetails ? { notes: formData.otherDetails } : undefined;
+      }
+    }
+
+    // Add custom details for all project types
+    if (formData.customDetails && formData.customDetails.length > 0) {
+      const customDetailsObj = {};
+      formData.customDetails.forEach((item) => {
+        if (item.key && item.key.trim()) {
+          // Try to parse value as number if it's numeric, otherwise keep as string
+          const trimmedValue = item.value?.trim() || '';
+          const numValue = Number(trimmedValue);
+          customDetailsObj[item.key.trim()] = isNaN(numValue) || trimmedValue === '' ? trimmedValue : numValue;
+        }
+      });
+      if (Object.keys(customDetailsObj).length > 0) {
+        payload.customDetails = customDetailsObj;
       }
     }
 
@@ -433,6 +499,7 @@ const ProjectForm = () => {
   const projectTypeOptions = [
     { value: PROJECT_TYPES.WELL, label: t('projects.types.well') || 'Well' },
     { value: PROJECT_TYPES.MOSQUE, label: t('projects.types.mosque') || 'Mosque' },
+    { value: PROJECT_TYPES.EDUCATIONAL_CENTER, label: t('projects.types.educational_center') || 'Educational Center' },
     { value: PROJECT_TYPES.OTHER, label: t('projects.types.other') || 'Other' },
   ];
 
@@ -975,8 +1042,128 @@ const ProjectForm = () => {
           </SectionCard>
         )}
 
+        {/* Educational Center Details */}
+        {formData.projectType === PROJECT_TYPES.EDUCATIONAL_CENTER && (
+          <SectionCard
+            icon={BuildingOfficeIcon}
+            title={t('projects.educationalCenterSpecifications') || 'Educational Center Specifications'}
+            subtitle={t('projects.educationalCenterSpecificationsDesc') || 'Facility specifications and capacity details'}
+            variant="info"
+          >
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <SpecTile label={t('projects.educationalCenterArea') || 'Area (m²)'} variant="info">
+                <Input
+                  name="educationalCenterArea"
+                  type="number"
+                  step="0.1"
+                  value={formData.educationalCenterArea}
+                  onChange={handleChange}
+                  placeholder="m²"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.educationalCenterTotalCapacity') || 'Total Capacity'} variant="success">
+                <Input
+                  name="educationalCenterTotalCapacity"
+                  type="number"
+                  value={formData.educationalCenterTotalCapacity}
+                  onChange={handleChange}
+                  placeholder="students"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.educationalCenterClassrooms') || 'Classrooms'} variant="primary">
+                <Input
+                  name="educationalCenterClassrooms"
+                  type="number"
+                  value={formData.educationalCenterClassrooms}
+                  onChange={handleChange}
+                  placeholder="count"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.educationalCenterLaboratories') || 'Laboratories'} variant="warning">
+                <Input
+                  name="educationalCenterLaboratories"
+                  type="number"
+                  value={formData.educationalCenterLaboratories}
+                  onChange={handleChange}
+                  placeholder="count"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.educationalCenterComputerLabs') || 'Computer Labs'} variant="default">
+                <Input
+                  name="educationalCenterComputerLabs"
+                  type="number"
+                  value={formData.educationalCenterComputerLabs}
+                  onChange={handleChange}
+                  placeholder="count"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.educationalCenterParkingSpaces') || 'Parking'} variant="success">
+                <Input
+                  name="educationalCenterParkingSpaces"
+                  type="number"
+                  value={formData.educationalCenterParkingSpaces}
+                  onChange={handleChange}
+                  placeholder="spaces"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.educationalCenterAdministrativeOffices') || 'Admin Offices'} variant="info">
+                <Input
+                  name="educationalCenterAdministrativeOffices"
+                  type="number"
+                  value={formData.educationalCenterAdministrativeOffices}
+                  onChange={handleChange}
+                  placeholder="count"
+                  className="bg-white/80"
+                />
+              </SpecTile>
+
+              <SpecTile label={t('projects.educationalCenterLibrary') || 'Library'} variant="purple">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="educationalCenterLibrary"
+                    checked={formData.educationalCenterLibrary}
+                    onChange={(e) => setFormData({ ...formData, educationalCenterLibrary: e.target.checked })}
+                    className="w-5 h-5 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-secondary-600">
+                    {formData.educationalCenterLibrary ? t('common.yes') : t('common.no')}
+                  </span>
+                </div>
+              </SpecTile>
+
+              <SpecTile label={t('projects.educationalCenterPlayground') || 'Playground'} variant="success">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="educationalCenterPlayground"
+                    checked={formData.educationalCenterPlayground}
+                    onChange={(e) => setFormData({ ...formData, educationalCenterPlayground: e.target.checked })}
+                    className="w-5 h-5 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-secondary-600">
+                    {formData.educationalCenterPlayground ? t('common.yes') : t('common.no')}
+                  </span>
+                </div>
+              </SpecTile>
+            </div>
+          </SectionCard>
+        )}
+
         {/* Other Details */}
-        {formData.projectType === PROJECT_TYPES.OTHER && (
+        {/* {formData.projectType === PROJECT_TYPES.OTHER && (
           <SectionCard
             icon={ClipboardDocumentListIcon}
             title={t('projects.otherSpecifications') || 'Project Specifications'}
@@ -999,7 +1186,77 @@ const ProjectForm = () => {
               </p>
             </div>
           </SectionCard>
-        )}
+        )} */}
+
+        {/* Custom Details - Available for all project types */}
+        <SectionCard
+          icon={ClipboardDocumentListIcon}
+          title={t('projects.customDetails') || 'Custom Details'}
+          subtitle={t('projects.customDetailsDesc') || 'Add additional custom fields with key-value pairs'}
+          variant="purple"
+        >
+          <div className="space-y-4">
+            {formData.customDetails.map((item, index) => (
+              <div key={index} className="flex gap-3 items-start p-4 bg-white/80 rounded-xl border-2 border-purple-200 hover:border-purple-300 transition-colors">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    name={`customKey-${index}`}
+                    value={item.key || ''}
+                    onChange={(e) => {
+                      const newCustomDetails = [...formData.customDetails];
+                      newCustomDetails[index] = { ...newCustomDetails[index], key: e.target.value };
+                      setFormData({ ...formData, customDetails: newCustomDetails });
+                    }}
+                    placeholder={t('projects.customFieldName') || 'Field name (e.g., Special Requirements)'}
+                    className="bg-white"
+                  />
+                  <Input
+                    name={`customValue-${index}`}
+                    value={item.value || ''}
+                    onChange={(e) => {
+                      const newCustomDetails = [...formData.customDetails];
+                      newCustomDetails[index] = { ...newCustomDetails[index], value: e.target.value };
+                      setFormData({ ...formData, customDetails: newCustomDetails });
+                    }}
+                    placeholder={t('projects.customFieldValue') || 'Field value'}
+                    className="bg-white"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newCustomDetails = formData.customDetails.filter((_, i) => i !== index);
+                    setFormData({ ...formData, customDetails: newCustomDetails });
+                  }}
+                  className="p-2 text-danger-600 hover:text-danger-700 hover:bg-danger-50 rounded-lg transition-colors flex-shrink-0"
+                  title={t('common.remove') || 'Remove'}
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({
+                  ...formData,
+                  customDetails: [...formData.customDetails, { key: '', value: '' }],
+                });
+              }}
+              className="w-full p-4 border-2 border-dashed border-purple-300 rounded-xl text-purple-600 hover:border-purple-400 hover:bg-purple-50 transition-all flex items-center justify-center gap-2 font-medium"
+            >
+              <PlusIcon className="w-5 h-5" />
+              <span>{t('projects.addCustomField') || 'Add Custom Field'}</span>
+            </button>
+
+            {formData.customDetails.length === 0 && (
+              <p className="text-center text-sm text-secondary-500 py-4">
+                {t('projects.noCustomFields') || 'No custom fields added. Click "Add Custom Field" to add one.'}
+              </p>
+            )}
+          </div>
+        </SectionCard>
 
         {/* Beneficiaries */}
         <SectionCard
