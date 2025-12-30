@@ -55,13 +55,50 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary-50 via-white to-secondary-100">
-        <div className="text-center animate-fade-in">
-          <div className="relative mb-6">
-            <div className="w-20 h-20 rounded-full border-4 border-secondary-200 mx-auto" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-4 border-transparent border-t-primary-600 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200/30 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary-200/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+
+        <div className="text-center animate-fade-in relative z-10">
+          {/* Logo */}
+          <div className="mb-8 flex justify-center">
+            <div className="relative">
+              <div className="w-24 h-24 flex items-center justify-center mx-auto mb-4 animate-scale-in">
+                <img
+                  src="/logo.png"
+                  alt="Wells Management"
+                  className="h-full w-full object-contain drop-shadow-lg"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+              {/* Pulsing ring around logo */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-24 h-24 rounded-full border-2 border-primary-200 animate-ping" />
+              </div>
+            </div>
           </div>
-          <p className="text-secondary-600 font-medium animate-pulse-soft">Loading application...</p>
+
+          {/* Text */}
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-secondary-900 tracking-tight">
+              Wells Management System
+            </h2>
+            <p className="text-secondary-500 font-medium animate-pulse-soft">
+              Loading application...
+            </p>
+          </div>
+
+          {/* Loading dots */}
+          <div className="flex justify-center gap-1.5 mt-6">
+            <div className="w-2 h-2 rounded-full bg-primary-600 animate-bounce" style={{ animationDelay: '0s' }} />
+            <div className="w-2 h-2 rounded-full bg-primary-600 animate-bounce" style={{ animationDelay: '0.2s' }} />
+            <div className="w-2 h-2 rounded-full bg-primary-600 animate-bounce" style={{ animationDelay: '0.4s' }} />
+          </div>
         </div>
       </div>
     );

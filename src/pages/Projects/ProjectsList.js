@@ -136,17 +136,12 @@ const ProjectsList = memo(() => {
       });
 
       // Note: page and limit are excluded from URL - backend will use defaults (page=1, limit=10)
-      // Debug: Log params being sent
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('Fetching projects with params (page/limit excluded from URL):', params);
-      }
-
       // Exclude page and limit from the URL query string
       const response = await projectsAPI.getAll(params, { excludePageLimit: true });
       setProjects(response.data.data.projects);
       setPagination(response.data.data.pagination);
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      // Error handled silently
     } finally {
       setLoading(false);
     }
@@ -619,4 +614,4 @@ const ProjectsList = memo(() => {
 
 ProjectsList.displayName = 'ProjectsList';
 
-export default ProjectsList;
+export default ProjectsList; 
