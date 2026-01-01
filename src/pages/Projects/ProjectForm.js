@@ -183,6 +183,8 @@ const ProjectForm = () => {
     projectManager: '',
     budgetAmount: '',
     budgetCurrency: 'USD',
+    costAmount: '',
+    costCurrency: 'USD',
     startDate: '',
     expectedEndDate: '',
     progress: 0,
@@ -260,6 +262,8 @@ const ProjectForm = () => {
         projectManager: project.projectManager?._id || '',
         budgetAmount: project.budget?.amount || '',
         budgetCurrency: project.budget?.currency || 'USD',
+        costAmount: project.cost?.amount || '',
+        costCurrency: project.cost?.currency || 'USD',
         startDate: project.startDate ? project.startDate.split('T')[0] : '',
         expectedEndDate: project.expectedEndDate ? project.expectedEndDate.split('T')[0] : '',
         progress: project.progress || 0,
@@ -352,10 +356,17 @@ const ProjectForm = () => {
       status: formData.status,
       contractor: formData.contractor || undefined,
       projectManager: formData.projectManager || undefined,
-      budget: {
-        amount: parseFloat(formData.budgetAmount) || 0,
-        currency: formData.budgetCurrency,
-      },
+      // Only include budget if user is super admin
+      ...(hasRole('super_admin') && formData.budgetAmount ? {
+        budget: {
+          amount: parseFloat(formData.budgetAmount) || 0,
+          currency: formData.budgetCurrency,
+        },
+      } : {}),
+      cost: hasRole('super_admin') && formData.costAmount ? {
+        amount: parseFloat(formData.costAmount) || 0,
+        currency: formData.costCurrency,
+      } : undefined,
       startDate: formData.startDate || undefined,
       expectedEndDate: formData.expectedEndDate || undefined,
       progress: parseInt(formData.progress) || 0,
@@ -832,36 +843,69 @@ const ProjectForm = () => {
           variant="success"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <FormField>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <Input
-                    label={t('projects.budget')}
-                    name="budgetAmount"
-                    type="number"
-                    step="0.01"
-                    value={formData.budgetAmount}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                  />
+            {/* Budget field - only visible to super admin */}
+            {hasRole('super_admin') && (
+              <FormField>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <Input
+                      label={t('projects.budget')}
+                      name="budgetAmount"
+                      type="number"
+                      step="0.01"
+                      value={formData.budgetAmount}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="w-28">
+                    <Select
+                      label={t('projects.currency')}
+                      name="budgetCurrency"
+                      value={formData.budgetCurrency}
+                      onChange={handleChange}
+                      options={[
+                        { value: 'USD', label: 'USD' },
+                        { value: 'EUR', label: 'EUR' },
+                        { value: 'SAR', label: 'SAR' },
+                      ]}
+                    />
+                  </div>
                 </div>
-                <div className="w-28">
-                  <Select
-                    label={t('projects.currency')}
-                    name="budgetCurrency"
-                    value={formData.budgetCurrency}
-                    onChange={handleChange}
-                    options={[
-                      { value: 'USD', label: 'USD' },
-                      { value: 'EUR', label: 'EUR' },
-                      { value: 'SAR', label: 'SAR' },
-                    ]}
-                  />
-                </div>
-              </div>
-            </FormField>
+              </FormField>
+            )}
 
-            <div></div>
+            {/* Cost field - only visible to super admin */}
+            {hasRole('super_admin') && (
+              <FormField>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <Input
+                      label={t('projects.cost')}
+                      name="costAmount"
+                      type="number"
+                      step="0.01"
+                      value={formData.costAmount}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="w-28">
+                    <Select
+                      label={t('projects.currency')}
+                      name="costCurrency"
+                      value={formData.costCurrency}
+                      onChange={handleChange}
+                      options={[
+                        { value: 'USD', label: 'USD' },
+                        { value: 'EUR', label: 'EUR' },
+                        { value: 'SAR', label: 'SAR' },
+                      ]}
+                    />
+                  </div>
+                </div>
+              </FormField>
+            )}
 
             <FormField>
               <Input

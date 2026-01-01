@@ -971,12 +971,20 @@ const ProjectDetail = memo(() => {
           subValue={`${formatDate(project.startDate)} - ${formatDate(project.expectedEndDate)}`}
           variant="info"
         />
-        {!hasRole('client') && project.budget?.amount && (
+        {hasRole('super_admin') && project.budget?.amount && (
           <StatCard
             icon={CurrencyDollarIcon}
             label={t('projects.budget')}
             value={formatCurrency(project.budget.amount, project.budget.currency)}
             variant="success"
+          />
+        )}
+        {hasRole('super_admin') && project.cost?.amount && (
+          <StatCard
+            icon={CurrencyDollarIcon}
+            label={t('projects.cost')}
+            value={formatCurrency(project.cost.amount, project.cost.currency)}
+            variant="warning"
           />
         )}
         {project.beneficiaries?.estimatedPeople && (
@@ -1069,12 +1077,24 @@ const ProjectDetail = memo(() => {
                       />
                     )}
 
-                    <InfoItem
-                      icon={CurrencyDollarIcon}
-                      label={t('projects.budget')}
-                      value={project.budget?.amount ? formatCurrency(project.budget.amount, project.budget.currency) : null}
-                      variant="success"
-                    />
+                    {hasRole('super_admin') && project.budget?.amount && (
+                      <InfoItem
+                        icon={CurrencyDollarIcon}
+                        label={t('projects.budget')}
+                        value={formatCurrency(project.budget.amount, project.budget.currency)}
+                        variant="success"
+                      />
+                    )}
+
+                    {/* Cost - only visible to super admin */}
+                    {hasRole('super_admin') && project.cost?.amount && (
+                      <InfoItem
+                        icon={CurrencyDollarIcon}
+                        label={t('projects.cost')}
+                        value={formatCurrency(project.cost.amount, project.cost.currency)}
+                        variant="warning"
+                      />
+                    )}
                   </>
                 )}
 
@@ -1607,15 +1627,17 @@ const ProjectDetail = memo(() => {
               <div className="p-6">
                 {paymentSummary ? (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="group p-4 bg-secondary-50 rounded-xl border-2 border-secondary-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
-                        <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wider mb-1">
-                          {t('payments.budget')}
-                        </p>
-                        <p className="text-xl font-bold text-secondary-900 group-hover:scale-105 transition-transform">
-                          {formatCurrency(paymentSummary.budget, paymentSummary.currency)}
-                        </p>
-                      </div>
+                    <div className={`grid gap-4 ${hasRole('super_admin') ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      {hasRole('super_admin') && (
+                        <div className="group p-4 bg-secondary-50 rounded-xl border-2 border-secondary-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                          <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wider mb-1">
+                            {t('payments.budget')}
+                          </p>
+                          <p className="text-xl font-bold text-secondary-900 group-hover:scale-105 transition-transform">
+                            {formatCurrency(paymentSummary.budget, paymentSummary.currency)}
+                          </p>
+                        </div>
+                      )}
                       <div className="group p-4 bg-primary-50 rounded-xl border-2 border-primary-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
                         <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wider mb-1">
                           {t('payments.totalSpent')}
@@ -1624,39 +1646,43 @@ const ProjectDetail = memo(() => {
                           {formatCurrency(paymentSummary.totalSpent, paymentSummary.currency)}
                         </p>
                       </div>
-                      <div className={`group p-4 rounded-xl border-2 hover:shadow-md hover:-translate-y-0.5 transition-all ${paymentSummary.remaining >= 0
-                        ? 'bg-success-50 border-success-200'
-                        : 'bg-danger-50 border-danger-200'
-                        }`}>
-                        <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wider mb-1">
-                          {t('payments.remaining')}
-                        </p>
-                        <p className={`text-xl font-bold group-hover:scale-105 transition-transform ${paymentSummary.remaining >= 0 ? 'text-success-600' : 'text-danger-600'
+                      {hasRole('super_admin') && paymentSummary.remaining !== null && paymentSummary.remaining !== undefined && (
+                        <div className={`group p-4 rounded-xl border-2 hover:shadow-md hover:-translate-y-0.5 transition-all ${paymentSummary.remaining >= 0
+                          ? 'bg-success-50 border-success-200'
+                          : 'bg-danger-50 border-danger-200'
                           }`}>
-                          {formatCurrency(paymentSummary.remaining, paymentSummary.currency)}
-                        </p>
-                      </div>
+                          <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wider mb-1">
+                            {t('payments.remaining')}
+                          </p>
+                          <p className={`text-xl font-bold group-hover:scale-105 transition-transform ${paymentSummary.remaining >= 0 ? 'text-success-600' : 'text-danger-600'
+                            }`}>
+                            {formatCurrency(paymentSummary.remaining, paymentSummary.currency)}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="p-4 bg-secondary-50 rounded-xl border-2 border-secondary-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-medium text-secondary-700">
-                          {t('payments.spentPercentage')}
-                        </p>
-                        <p className="text-sm font-bold text-secondary-900">
-                          {paymentSummary.spentPercentage.toFixed(1)}%
-                        </p>
+                    {hasRole('super_admin') && paymentSummary.spentPercentage !== null && paymentSummary.spentPercentage !== undefined && (
+                      <div className="p-4 bg-secondary-50 rounded-xl border-2 border-secondary-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm font-medium text-secondary-700">
+                            {t('payments.spentPercentage')}
+                          </p>
+                          <p className="text-sm font-bold text-secondary-900">
+                            {paymentSummary.spentPercentage.toFixed(1)}%
+                          </p>
+                        </div>
+                        <div className="w-full bg-secondary-200 rounded-full h-3 overflow-hidden">
+                          <div
+                            className={`h-3 rounded-full transition-all duration-500 ${paymentSummary.spentPercentage > 100 ? 'bg-danger-500' :
+                              paymentSummary.spentPercentage > 80 ? 'bg-warning-500' :
+                                'bg-primary-500'
+                              }`}
+                            style={{ width: `${Math.min(paymentSummary.spentPercentage, 100)}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-secondary-200 rounded-full h-3 overflow-hidden">
-                        <div
-                          className={`h-3 rounded-full transition-all duration-500 ${paymentSummary.spentPercentage > 100 ? 'bg-danger-500' :
-                            paymentSummary.spentPercentage > 80 ? 'bg-warning-500' :
-                              'bg-primary-500'
-                            }`}
-                          style={{ width: `${Math.min(paymentSummary.spentPercentage, 100)}%` }}
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12">

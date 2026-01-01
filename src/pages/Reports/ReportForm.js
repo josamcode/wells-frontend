@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
+import SearchableSelect from '../../components/common/SearchableSelect';
 import Textarea from '../../components/common/Textarea';
 import { REPORT_TYPES } from '../../utils/constants';
 import { ArrowUpTrayIcon, XMarkIcon, LinkIcon } from '@heroicons/react/24/outline';
@@ -73,6 +73,7 @@ const ReportForm = () => {
         weatherCondition: report.weather?.condition || '',
         weatherTemperature: report.weather?.temperature || '',
         googleDriveUrl: report.googleDriveUrl || '',
+        locationUrl: report.locationUrl || '',
       });
     } catch (error) {
       toast.error(t('reports.failedToFetchReport'));
@@ -96,6 +97,18 @@ const ReportForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!formData.googleDriveUrl || !formData.googleDriveUrl.trim()) {
+      toast.error(t('reports.googleDriveUrlRequired') || 'Google Drive URL is required');
+      return;
+    }
+
+    if (!formData.locationUrl || !formData.locationUrl.trim()) {
+      toast.error(t('reports.locationUrlRequired') || 'Location URL is required');
+      return;
+    }
+
     setLoading(true);
 
     const payload = {
@@ -114,6 +127,7 @@ const ReportForm = () => {
         temperature: formData.weatherTemperature ? parseFloat(formData.weatherTemperature) : undefined,
       },
       googleDriveUrl: formData.googleDriveUrl || undefined,
+      locationUrl: formData.locationUrl || undefined,
     };
 
     try {
@@ -159,6 +173,8 @@ const ReportForm = () => {
   const projectOptions = projects.map((project) => ({
     value: project._id,
     label: `${project.projectNumber} - ${project.projectName}`,
+    // Store additional searchable fields for better filtering
+    searchText: `${project.projectNumber} ${project.projectName}`.toLowerCase(),
   }));
 
   return (
@@ -173,12 +189,13 @@ const ReportForm = () => {
         {/* Basic Information */}
         <Card title={t('reports.basicInformation')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
+            <SearchableSelect
               label={t('projects.projectName')}
               name="project"
               value={formData.project}
               onChange={handleChange}
               options={projectOptions}
+              placeholder={t('reports.searchProjectByNameOrNumber') || 'Search by project name or number...'}
               required
               className="md:col-span-2"
             />
@@ -281,6 +298,24 @@ const ReportForm = () => {
           </div>
         </Card>
 
+        {/* Location URL */}
+        <Card title={t('reports.location') || 'Location'}>
+          <div className="space-y-4">
+            <Input
+              label={t('reports.locationUrl') || 'Location URL'}
+              name="locationUrl"
+              type="url"
+              value={formData.locationUrl}
+              onChange={handleChange}
+              placeholder={t('reports.locationUrlPlaceholder') || 'https://maps.google.com/...'}
+              required
+            />
+            <p className="text-xs text-gray-500">
+              {t('reports.locationUrlHint') || 'Enter a Google Maps URL or any location link'}
+            </p>
+          </div>
+        </Card>
+
         {/* Google Drive URL */}
         <Card title={t('reports.googleDriveLink')}>
           <div className="space-y-4">
@@ -291,6 +326,7 @@ const ReportForm = () => {
               value={formData.googleDriveUrl}
               onChange={handleChange}
               placeholder={t('reports.googleDriveUrlPlaceholder')}
+              required
               className="md:col-span-2"
             />
             <p className="text-xs text-gray-500">

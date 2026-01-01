@@ -49,9 +49,11 @@ const SearchableSelect = memo(({
   const filteredOptions = options.filter((option) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
+    // Search in label, value, and optional searchText property
     return (
       option.label.toLowerCase().includes(searchLower) ||
-      (option.value && option.value.toString().toLowerCase().includes(searchLower))
+      (option.value && option.value.toString().toLowerCase().includes(searchLower)) ||
+      (option.searchText && option.searchText.includes(searchLower))
     );
   });
 

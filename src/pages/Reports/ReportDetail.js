@@ -23,6 +23,7 @@ import {
   CalendarIcon,
   UserIcon,
   FolderIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
 
 const InfoItem = memo(({ icon: Icon, label, value }) => (
@@ -143,6 +144,11 @@ const ReportDetail = memo(() => {
   const canEdit = user?._id === report.submittedBy?._id && ['draft', 'rejected'].includes(report.status);
   const canReview = hasRole('super_admin', 'admin', 'project_manager') && ['submitted', 'under_review'].includes(report.status);
   const canSubmit = user?._id === report.submittedBy?._id && report.status === 'draft';
+  // Super admin can delete any report
+  // Contractors can delete their own reports that are NOT approved (draft, submitted, under_review, rejected)
+  const canDelete =
+    hasRole('super_admin') ||
+    (user?._id === report.submittedBy?._id && report.status !== 'approved');
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -194,7 +200,7 @@ const ReportDetail = memo(() => {
               </Button>
             </>
           )}
-          {canEdit && (
+          {canDelete && (
             <Button variant="outline-danger" onClick={() => setDeleteModal(true)} icon={TrashIcon}>
               {t('common.delete')}
             </Button>
@@ -372,6 +378,22 @@ const ReportDetail = memo(() => {
                   {report.rejectionReason || report.reviewNotes}
                 </p>
               </div>
+            </Card>
+          )}
+
+          {/* Location URL */}
+          {report.locationUrl && (
+            <Card title={t('reports.location')}>
+              <a
+                href={report.locationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-100 transition-colors text-sm font-semibold"
+              >
+                <MapPinIcon className="w-5 h-5" />
+                {t('reports.viewLocation') || 'View Location'}
+                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+              </a>
             </Card>
           )}
 

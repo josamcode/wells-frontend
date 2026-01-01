@@ -273,14 +273,14 @@ const Dashboard = memo(() => {
                   : t('dashboard.subtitle')}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           {data?.projects?.completionRate > 0 && (
             <div className="flex items-center gap-2 px-4 py-2 bg-success-50 text-success-700 rounded-xl text-sm font-medium">
               <ArrowTrendingUpIcon className="w-4 h-4" />
               <span>{t('dashboard.increaseThisMonth')}</span>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* Quick Actions - Project Type Filters */}
