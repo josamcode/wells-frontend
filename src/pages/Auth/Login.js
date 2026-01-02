@@ -160,16 +160,6 @@ const Login = memo(() => {
               </Link>
             </p>
           </div>
-
-          {/* Demo Credentials */}
-          <div className="mt-8 p-4 bg-primary-50 rounded-xl border border-primary-100">
-            <p className="text-xs font-medium text-primary-800 text-center">
-              <span className="block mb-1">{t('app.demoCredentials')}</span>
-              <span className="text-primary-600">admin@wells.com</span>
-              <span className="mx-2 text-primary-400">|</span>
-              <span className="text-primary-600">Admin@123456</span>
-            </p>
-          </div>
         </div>
       </div>
     </div>
