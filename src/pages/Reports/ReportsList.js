@@ -90,7 +90,7 @@ const ReportsList = memo(() => {
       ),
     },
     {
-      header: t('reports.reportTitle'),
+      header: t('reports.reportNumber'),
       accessor: 'title',
       render: (row) => {
         const displayValue = language === 'ar' && row.titleAr ? row.titleAr : row.title;

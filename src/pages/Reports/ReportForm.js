@@ -216,7 +216,7 @@ const ReportForm = () => {
               required
             />
             <Input
-              label={t('reports.reportTitle')}
+              label={t('reports.reportNumber')}
               name="title"
               value={formData.title}
               onChange={handleChange}

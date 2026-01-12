@@ -141,7 +141,7 @@ const ReportDetail = memo(() => {
 
   if (!report) return null;
 
-  const canEdit = user?._id === report.submittedBy?._id && ['draft', 'rejected'].includes(report.status);
+  const canEdit = user?._id === report.submittedBy?._id && ['draft', 'rejected', 'submitted', 'under_review'].includes(report.status);
   const canReview = hasRole('super_admin', 'admin', 'project_manager') && ['submitted', 'under_review'].includes(report.status);
   const canSubmit = user?._id === report.submittedBy?._id && report.status === 'draft';
   // Super admin can delete any report
